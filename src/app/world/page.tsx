@@ -82,7 +82,7 @@ export default function WorldPage() {
     // Full-world side-view
     const viewW = Math.min(666, worldSize);
     const viewH = Math.min(256, worldSize);
-    const tileSize = 10;
+    const tileSize = 4;
 
     const clampedStartX = 0;
     const clampedStartY = Math.max(0, Math.floor(worldSize - viewH));
