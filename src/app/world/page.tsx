@@ -39,7 +39,6 @@ export default function WorldPage() {
   const [viewport] = useState({ w: 1080, h: 512 });
   const [scale, setScale] = useState(1);
   const [showIntro, setShowIntro] = useState(true);
-  const [isLocked, setIsLocked] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [chat, setChat] = useState<Array<{ ts: number; message: string }>>([]);
 
@@ -123,13 +122,7 @@ export default function WorldPage() {
     };
   }, []);
 
-  useEffect(() => {
-    const onLockChange = () => {
-      setIsLocked(document.pointerLockElement === containerRef.current);
-    };
-    document.addEventListener('pointerlockchange', onLockChange);
-    return () => document.removeEventListener('pointerlockchange', onLockChange);
-  }, []);
+  // pointer lock removed
 
   useEffect(() => {
     if (!snapshot || !canvasRef.current) return;
@@ -213,13 +206,17 @@ export default function WorldPage() {
     setZoom((z) => Math.min(4, Math.max(0.5, +(z + delta).toFixed(2))));
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    dragRef.current = { x: e.clientX, y: e.clientY, panX: pan?.x || 0, panY: pan?.y || 0 };
+  };
+
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (showIntro || !isLocked || !snapshot) return;
+    if (showIntro || !dragRef.current) return;
     const baseTile = showIntro ? 6 : 14;
     const tileSize = baseTile * zoom;
-    const dx = -e.movementX / tileSize;
-    const dy = -e.movementY / tileSize;
-    setPan((p) => (p ? { x: Math.floor(p.x + dx), y: Math.floor(p.y + dy) } : p));
+    const dx = (e.clientX - dragRef.current.x) / tileSize;
+    const dy = (e.clientY - dragRef.current.y) / tileSize;
+    setPan({ x: Math.floor(dragRef.current.panX - dx), y: Math.floor(dragRef.current.panY - dy) });
   };
 
   const stopDrag = () => {
@@ -227,11 +224,7 @@ export default function WorldPage() {
     if (pan) panCenterRef.current = pan;
   };
 
-  const requestLock = () => {
-    if (containerRef.current && !isLocked) {
-      containerRef.current.requestPointerLock();
-    }
-  };
+  // no pointer lock
 
   return (
     <div className="min-h-screen bg-black">
@@ -241,13 +234,12 @@ export default function WorldPage() {
         <div
           ref={containerRef}
           className="bg-black"
-          style={{ width: 1080, height: 512, transform: `scale(${scale})`, transformOrigin: 'center center', cursor: showIntro || !isLocked ? 'auto' : 'none' }}
+          style={{ width: 1080, height: 512, transform: `scale(${scale})`, transformOrigin: 'center center', cursor: 'grab' }}
           onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
+          onMouseUp={stopDrag}
           onMouseLeave={stopDrag}
-          onClick={() => {
-            if (!showIntro) requestLock();
-          }}
         >
           <canvas ref={canvasRef} className="block w-full h-full" />
         </div>
@@ -270,7 +262,7 @@ export default function WorldPage() {
               <div className="mt-2 text-zinc-300">
                 {isMobile
                   ? 'World viewer is PC-only.'
-                  : 'Click to lock cursor. Move mouse to pan. Scroll to zoom. Press Esc to unlock.'}
+                  : 'Drag to pan. Scroll to zoom.'}
               </div>
               {!isMobile && (
                 <button
@@ -278,7 +270,6 @@ export default function WorldPage() {
                   onClick={() => {
                     setShowIntro(false);
                     if (pan) panCenterRef.current = pan;
-                    requestLock();
                   }}
                 >
                   Enter world
