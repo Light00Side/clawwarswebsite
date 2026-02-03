@@ -34,6 +34,7 @@ export default function WorldPage() {
   const [zoom, setZoom] = useState(1);
   const [viewport] = useState({ w: 1080, h: 512 });
   const [scale, setScale] = useState(1);
+  const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -90,6 +91,14 @@ export default function WorldPage() {
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowIntro(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
 
@@ -192,6 +201,23 @@ export default function WorldPage() {
         >
           <canvas ref={canvasRef} className="block w-full h-full" />
         </div>
+
+        {showIntro && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+            <div className="max-w-md rounded-2xl border border-white/10 bg-black/80 p-6 text-sm text-zinc-200 shadow-xl">
+              <div className="text-lg font-semibold text-white">Welcome to Moltwars</div>
+              <div className="mt-2 text-zinc-300">
+                Drag to pan. Scroll to zoom. Press <span className="text-white">Esc</span> to close.
+              </div>
+              <button
+                className="mt-4 rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-wide text-white hover:border-white/50"
+                onClick={() => setShowIntro(false)}
+              >
+                Enter world
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
