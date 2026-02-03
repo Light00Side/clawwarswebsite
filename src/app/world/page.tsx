@@ -213,8 +213,8 @@ export default function WorldPage() {
       setPanTarget(target);
     }
 
-    const startX = Math.max(0, Math.min(worldSize - viewW, panBase?.x ?? 0));
-    const startY = Math.max(0, Math.min((worldHeight || worldSize) - viewH, panBase?.y ?? 0));
+    const startX = Math.floor(Math.max(0, Math.min(worldSize - viewW, panBase?.x ?? 0)));
+    const startY = Math.floor(Math.max(0, Math.min((worldHeight || worldSize) - viewH, panBase?.y ?? 0)));
 
     canvas.width = viewW * tileSize;
     canvas.height = viewH * tileSize;
