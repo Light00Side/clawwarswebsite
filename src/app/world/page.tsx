@@ -80,12 +80,12 @@ export default function WorldPage() {
     if (!ctx) return;
 
     // Full-world side-view
-    const viewW = worldSize;
-    const viewH = worldSize;
+    const viewW = Math.min(666, worldSize);
+    const viewH = Math.min(256, worldSize);
     const tileSize = 10;
 
     const clampedStartX = 0;
-    const clampedStartY = 0;
+    const clampedStartY = Math.max(0, Math.floor(worldSize - viewH));
 
     canvas.width = viewW * tileSize;
     canvas.height = viewH * tileSize;
