@@ -29,21 +29,30 @@ export default function WorldPage() {
 
   useEffect(() => {
     let mounted = true;
+    console.log('[world] connecting', WORLD_WS);
     const ws = new WebSocket(WORLD_WS);
     ws.onmessage = (evt) => {
       if (!mounted) return;
       try {
         const data = JSON.parse(evt.data);
         if (data?.ok) setSnapshot(data);
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[world] bad message', e);
+      }
     };
-    ws.onerror = () => {
+    ws.onerror = (e) => {
       if (!mounted) return;
+      console.error('[world] ws error', e);
       setError('Failed to connect to live world');
     };
     ws.onopen = () => {
       if (!mounted) return;
+      console.log('[world] ws open');
       setError(null);
+    };
+    ws.onclose = (e) => {
+      if (!mounted) return;
+      console.warn('[world] ws close', e.code, e.reason);
     };
     // Fallback to one-time fetch in case WS is blocked
     fetch(WORLD_URL)
@@ -52,8 +61,9 @@ export default function WorldPage() {
         if (!mounted) return;
         setSnapshot(data);
       })
-      .catch(() => {
+      .catch((e) => {
         if (!mounted) return;
+        console.warn('[world] fetch failed', e);
       });
     return () => {
       mounted = false;
