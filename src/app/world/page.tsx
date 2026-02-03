@@ -285,9 +285,10 @@ export default function WorldPage() {
                   className={`block w-full truncate rounded px-2 py-1 text-left hover:bg-white/10 ${follow === p.name ? 'bg-white/10' : ''}`}
                   onClick={() => {
                     setFollow(p.name);
-                    if (pan && snapshot) {
-                      const viewW = Math.max(1, Math.min(snapshot.worldSize, Math.floor(snapshot.worldSize / 2)));
-                      const viewH = Math.max(1, Math.min(snapshot.worldSize, Math.floor(snapshot.worldSize / 2)));
+                    setZoom(1.5);
+                    if (snapshot) {
+                      const viewW = Math.max(1, Math.min(snapshot.worldSize, Math.ceil(viewport.w / (14 * 1.5))));
+                      const viewH = Math.max(1, Math.min(snapshot.worldSize, Math.ceil(viewport.h / (14 * 1.5))));
                       const next = { x: Math.floor(p.x - viewW / 2), y: Math.floor(p.y - viewH / 2) };
                       setPan(next);
                       panCenterRef.current = next;
@@ -298,6 +299,14 @@ export default function WorldPage() {
                 </button>
               ))}
             </div>
+            {follow && (
+              <button
+                className="mt-2 w-full rounded border border-white/20 px-2 py-1 text-xs uppercase tracking-wide text-white hover:border-white/50"
+                onClick={() => setFollow(null)}
+              >
+                Stop follow
+              </button>
+            )}
           </div>
         )}
 
