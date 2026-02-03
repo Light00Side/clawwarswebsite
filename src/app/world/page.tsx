@@ -31,7 +31,7 @@ export default function WorldPage() {
   const [error, setError] = useState<string | null>(null);
   const [pan, setPan] = useState<{ x: number; y: number } | null>(null);
   const [zoom, setZoom] = useState(1);
-  const [viewport, setViewport] = useState({ w: 800, h: 600 });
+  const [viewport] = useState({ w: 1920, h: 1080 });
 
   useEffect(() => {
     let mounted = true;
@@ -77,16 +77,7 @@ export default function WorldPage() {
     };
   }, []);
 
-  useEffect(() => {
-    const update = () => {
-      const el = containerRef.current;
-      if (!el) return;
-      setViewport({ w: el.clientWidth, h: el.clientHeight });
-    };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
+  // fixed 1920x1080 viewport
 
   useEffect(() => {
     if (!snapshot || !canvasRef.current) return;
@@ -174,16 +165,19 @@ export default function WorldPage() {
     <div className="min-h-screen bg-black">
       {error && <div className="p-4 text-sm text-red-400">{error}</div>}
       {!snapshot && !error && <div className="p-4 text-sm text-zinc-400">Loading…</div>}
-      <div
-        ref={containerRef}
-        className="h-screen w-screen overflow-hidden bg-black"
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={stopDrag}
-        onMouseLeave={stopDrag}
-      >
-        <canvas ref={canvasRef} className="block w-full h-full" />
+      <div className="h-screen w-screen overflow-hidden bg-black flex items-center justify-center">
+        <div
+          ref={containerRef}
+          className="bg-black"
+          style={{ width: 1920, height: 1080 }}
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={stopDrag}
+          onMouseLeave={stopDrag}
+        >
+          <canvas ref={canvasRef} className="block w-full h-full" />
+        </div>
       </div>
     </div>
   );
