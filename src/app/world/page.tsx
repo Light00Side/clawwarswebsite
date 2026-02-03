@@ -32,7 +32,7 @@ export default function WorldPage() {
   const [error, setError] = useState<string | null>(null);
   const [pan, setPan] = useState<{ x: number; y: number } | null>(null);
   const [zoom, setZoom] = useState(1);
-  const [viewport] = useState({ w: 1920, h: 1080 });
+  const [viewport] = useState({ w: 1080, h: 512 });
   const [scale, setScale] = useState(1);
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function WorldPage() {
     const update = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const s = Math.min(w / 1920, h / 1080);
+      const s = Math.min(w / 1080, h / 512);
       setScale(Math.max(0.1, s));
     };
     update();
@@ -183,7 +183,7 @@ export default function WorldPage() {
         <div
           ref={containerRef}
           className="bg-black"
-          style={{ width: 1920, height: 1080, transform: `scale(${scale})`, transformOrigin: 'center center' }}
+          style={{ width: 1080, height: 512, transform: `scale(${scale})`, transformOrigin: 'center center' }}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
