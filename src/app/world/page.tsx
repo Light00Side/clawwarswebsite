@@ -28,6 +28,7 @@ export default function WorldPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const panCenterRef = useRef<{ x: number; y: number } | null>(null);
   const [snapshot, setSnapshot] = useState<WorldSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pan, setPan] = useState<{ x: number; y: number } | null>(null);
@@ -118,7 +119,9 @@ export default function WorldPage() {
     const focus = players[0] || npcs[0] || animals[0] || { x: worldSize / 2, y: worldSize / 2 };
 
     if (!pan) {
-      setPan({ x: Math.floor(focus.x - viewW / 2), y: Math.floor(focus.y - viewH / 2) });
+      const initial = { x: Math.floor(focus.x - viewW / 2), y: Math.floor(focus.y - viewH / 2) };
+      setPan(initial);
+      panCenterRef.current = initial;
       return;
     }
 
@@ -171,17 +174,20 @@ export default function WorldPage() {
     if (showIntro) return;
     const baseTile = showIntro ? 6 : 10;
     const tileSize = baseTile * zoom;
-    if (!dragRef.current) {
-      dragRef.current = { x: e.clientX, y: e.clientY, panX: pan?.x || 0, panY: pan?.y || 0 };
-      return;
-    }
-    const dx = (e.clientX - dragRef.current.x) / tileSize;
-    const dy = (e.clientY - dragRef.current.y) / tileSize;
-    setPan({ x: Math.floor(dragRef.current.panX - dx), y: Math.floor(dragRef.current.panY - dy) });
+    const container = containerRef.current;
+    if (!container || !panCenterRef.current) return;
+
+    const rect = container.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = (e.clientX - centerX) / tileSize;
+    const dy = (e.clientY - centerY) / tileSize;
+    setPan({ x: Math.floor(panCenterRef.current.x + dx), y: Math.floor(panCenterRef.current.y + dy) });
   };
 
   const stopDrag = () => {
     dragRef.current = null;
+    if (pan) panCenterRef.current = pan;
   };
 
   return (
@@ -209,7 +215,10 @@ export default function WorldPage() {
               </div>
               <button
                 className="mt-4 rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-wide text-white hover:border-white/50"
-                onClick={() => setShowIntro(false)}
+                onClick={() => {
+                  setShowIntro(false);
+                  if (pan) panCenterRef.current = pan;
+                }}
               >
                 Enter world
               </button>
