@@ -226,7 +226,7 @@ export default function WorldPage() {
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     setZoom((z) => {
       const baseTile = showIntro ? 16 : 36;
-      const ws = snapshot?.worldSize || 128;
+      const ws = snapshot?.worldSize || 192;
       const minZoomW = viewport.w / (ws * baseTile);
       const minZoomH = viewport.h / (ws * baseTile);
       const minZoom = Math.max(0.1, minZoomW, minZoomH);
