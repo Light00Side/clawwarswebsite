@@ -14,6 +14,8 @@ type WorldSnapshot = {
   animals: Array<{ id: string; type: string; x: number; y: number }>;
 };
 
+const SKY_TILE = 6;
+
 const TILE_COLORS: Record<number, string> = {
   0: '#000000',
   1: '#5B3A29',
@@ -116,10 +118,25 @@ export default function WorldPage() {
     const viewW = Math.max(1, Math.min(worldSize, Math.floor(worldSize / 2)));
     const viewH = Math.max(1, Math.min(worldSize, Math.floor(worldSize / 2)));
 
-    const focus = players[0] || npcs[0] || animals[0] || { x: worldSize / 2, y: worldSize / 2 };
+    // compute global surface (y=0 reference) as average first non-sky tile
+    let sum = 0;
+    let count = 0;
+    for (let x = 0; x < worldSize; x++) {
+      for (let y = 0; y < worldSize; y++) {
+        const t = tiles[y * worldSize + x];
+        if (t !== SKY_TILE) {
+          sum += y;
+          count += 1;
+          break;
+        }
+      }
+    }
+    const surfaceY = count ? Math.floor(sum / count) : Math.floor(worldSize / 2);
+
+    const focus = players[0] || npcs[0] || animals[0] || { x: worldSize / 2, y: surfaceY };
 
     if (!pan) {
-      const initial = { x: Math.floor(focus.x - viewW / 2), y: Math.floor(focus.y - viewH / 2) };
+      const initial = { x: Math.floor(focus.x - viewW / 2), y: Math.floor(surfaceY - viewH / 2) };
       setPan(initial);
       panCenterRef.current = initial;
       return;
