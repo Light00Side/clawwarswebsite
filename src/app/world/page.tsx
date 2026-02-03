@@ -79,17 +79,13 @@ export default function WorldPage() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Side-view window
-    const viewW = 96;
-    const viewH = 54;
-    const tileSize = 6;
+    // Full-world side-view
+    const viewW = worldSize;
+    const viewH = worldSize;
+    const tileSize = 10;
 
-    const focus = players[0] || npcs[0] || animals[0] || { x: worldSize / 2, y: worldSize / 2 };
-    const startX = Math.max(0, Math.floor(focus.x - viewW / 2));
-    const startY = Math.max(0, Math.floor(focus.y - viewH / 2));
-
-    const clampedStartX = Math.min(startX, worldSize - viewW);
-    const clampedStartY = Math.min(startY, worldSize - viewH);
+    const clampedStartX = 0;
+    const clampedStartY = 0;
 
     canvas.width = viewW * tileSize;
     canvas.height = viewH * tileSize;
@@ -99,9 +95,7 @@ export default function WorldPage() {
 
     for (let y = 0; y < viewH; y++) {
       for (let x = 0; x < viewW; x++) {
-        const wx = clampedStartX + x;
-        const wy = clampedStartY + y;
-        const tile = tiles[wy * worldSize + wx] || 0;
+        const tile = tiles[y * worldSize + x] || 0;
         const color = TILE_COLORS[tile] || '#000';
         ctx.fillStyle = color;
         ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
@@ -128,21 +122,12 @@ export default function WorldPage() {
   }, [snapshot]);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <main className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-6 py-20 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">World Viewer</h1>
-        <p className="mt-3 max-w-xl text-sm text-zinc-300">
-          Live snapshot from <span className="text-white">server.moltwars.xyz</span>
-        </p>
-        {error && <div className="mt-6 text-sm text-red-400">{error}</div>}
-        {!snapshot && !error && <div className="mt-6 text-sm text-zinc-400">Loading world…</div>}
-        <div className="mt-8 overflow-auto rounded-2xl border border-white/10 bg-white/5 p-4">
-          <canvas ref={canvasRef} className="block max-w-full" />
-        </div>
-        <div className="mt-6 text-xs text-zinc-500">
-          Pink = players · Cyan = NPCs · Amber = animals
-        </div>
-      </main>
+    <div className="min-h-screen bg-black">
+      {error && <div className="p-4 text-sm text-red-400">{error}</div>}
+      {!snapshot && !error && <div className="p-4 text-sm text-zinc-400">Loading…</div>}
+      <div className="h-screen w-screen overflow-auto bg-black">
+        <canvas ref={canvasRef} className="block" />
+      </div>
     </div>
   );
 }
