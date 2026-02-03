@@ -123,27 +123,38 @@ export default function WorldPage() {
   useEffect(() => {
     let raf: number;
     const tick = () => {
-      if (panTarget) {
-        setPan((p) => {
-          if (!p) return panTarget;
-          const nx = p.x + (panTarget.x - p.x) * 0.15;
-          const ny = p.y + (panTarget.y - p.y) * 0.15;
-          if (Math.abs(nx - panTarget.x) < 0.01 && Math.abs(ny - panTarget.y) < 0.01) return panTarget;
-          return { x: nx, y: ny };
-        });
-      }
-      if (zoomTarget !== null) {
-        setZoom((z) => {
-          const nz = z + (zoomTarget - z) * 0.15;
-          if (Math.abs(nz - zoomTarget) < 0.002) return zoomTarget;
-          return nz;
-        });
-      }
+      const baseTile = showIntro ? 16 : 36;
+      const mouse = mouseRef.current;
+
+      setPan((p) => {
+        if (!panTarget) return p;
+        if (!p) return panTarget;
+        const nx = p.x + (panTarget.x - p.x) * 0.15;
+        const ny = p.y + (panTarget.y - p.y) * 0.15;
+        if (Math.abs(nx - panTarget.x) < 0.01 && Math.abs(ny - panTarget.y) < 0.01) return panTarget;
+        return { x: nx, y: ny };
+      });
+
+      setZoom((z) => {
+        if (zoomTarget === null) return z;
+        const nz = z + (zoomTarget - z) * 0.15;
+        if (mouse && panTarget) {
+          const tileSize = baseTile * z;
+          const worldX = panTarget.x + mouse.x / tileSize;
+          const worldY = panTarget.y + mouse.y / tileSize;
+          const newTileSize = baseTile * nz;
+          const nextPan = { x: worldX - mouse.x / newTileSize, y: worldY - mouse.y / newTileSize };
+          setPanTarget(nextPan);
+        }
+        if (Math.abs(nz - zoomTarget) < 0.002) return zoomTarget;
+        return nz;
+      });
+
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [panTarget, zoomTarget]);
+  }, [panTarget, zoomTarget, showIntro]);
 
   useEffect(() => {
     const m = window.matchMedia('(pointer: coarse)');
@@ -264,18 +275,6 @@ export default function WorldPage() {
     const minZoom = Math.max(0.1, minZoomW, minZoomH);
     const maxZoom = viewport.w / (100 * baseTile); // keep at least 100 tiles visible
     const next = Math.min(maxZoom, Math.max(minZoom, +(zoomTarget + delta).toFixed(2)));
-
-    // zoom towards cursor
-    const mouse = mouseRef.current;
-    if (mouse && panTarget) {
-      const tileSize = baseTile * zoom;
-      const worldX = panTarget.x + mouse.x / tileSize;
-      const worldY = panTarget.y + mouse.y / tileSize;
-      const newTileSize = baseTile * next;
-      const nextPan = { x: worldX - mouse.x / newTileSize, y: worldY - mouse.y / newTileSize };
-      setPanTarget(nextPan);
-    }
-
     setZoomTarget(next);
   };
 
