@@ -41,9 +41,13 @@ export default function WorldPage() {
   const [showIntro, setShowIntro] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [chat, setChat] = useState<Array<{ ts: number; message: string }>>([]);
+  const [follow, setFollow] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
+    const params = new URLSearchParams(window.location.search);
+    const followParam = params.get('follow');
+    if (followParam) setFollow(followParam);
     console.log('[world] connecting', WORLD_WS);
     const ws = new WebSocket(WORLD_WS);
     ws.onmessage = (evt) => {
@@ -152,13 +156,30 @@ export default function WorldPage() {
     }
     const surfaceY = count ? Math.floor(sum / count) : Math.floor(worldSize / 2);
 
-    const focus = players[0] || npcs[0] || animals[0] || { x: worldSize / 2, y: surfaceY };
+    const focus =
+      (follow && players.find((p) => p.name.toLowerCase() === follow.toLowerCase())) ||
+      players[0] ||
+      npcs[0] ||
+      animals[0] ||
+      { x: worldSize / 2, y: surfaceY };
 
     if (!pan) {
       const initial = { x: Math.floor(focus.x - viewW / 2), y: Math.floor(surfaceY - viewH / 2) };
       setPan(initial);
       panCenterRef.current = initial;
       return;
+    }
+
+    // soft follow: gently pull pan toward target
+    if (follow && focus) {
+      const targetX = Math.floor(focus.x - viewW / 2);
+      const targetY = Math.floor(focus.y - viewH / 2);
+      const next = {
+        x: Math.floor(pan.x + (targetX - pan.x) * 0.05),
+        y: Math.floor(pan.y + (targetY - pan.y) * 0.05),
+      };
+      setPan(next);
+      panCenterRef.current = next;
     }
 
     let startX = Math.max(0, Math.min(worldSize - viewW, pan.x));
