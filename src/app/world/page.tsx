@@ -47,6 +47,7 @@ export default function WorldPage() {
   const [chat, setChat] = useState<Array<{ ts: number; message: string }>>([]);
   const [follow, setFollow] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [hovered, setHovered] = useState<any | null>(null);
   const surfaceRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -257,11 +258,24 @@ export default function WorldPage() {
       if (sx < 0 || sy < 0 || sx >= canvas.width || sy >= canvas.height) return;
       ctx.fillStyle = color;
       ctx.fillRect(sx, sy, tileSize, tileSize);
+      ctx.strokeStyle = '#ffffff66';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(sx + 0.5, sy + 0.5, tileSize - 1, tileSize - 1);
     };
 
     animals.forEach((a) => drawEntity(Math.floor(a.x), Math.floor(a.y), '#F59E0B'));
     npcs.forEach((n) => drawEntity(Math.floor(n.x), Math.floor(n.y), '#22D3EE'));
     players.forEach((p) => drawEntity(Math.floor(p.x), Math.floor(p.y), '#F472B6'));
+
+    // hover detection (players only)
+    if (mouseRef.current) {
+      const mx = mouseRef.current.x;
+      const my = mouseRef.current.y;
+      const wx = startX + Math.floor(mx / tileSize);
+      const wy = startY + Math.floor(my / tileSize);
+      const found = players.find((p) => Math.floor(p.x) === wx && Math.floor(p.y) === wy);
+      setHovered(found ? { ...found } : null);
+    }
   }, [snapshot, pan, zoom, viewport]);
 
   const handleWheel = (e: React.WheelEvent) => {
@@ -355,6 +369,21 @@ export default function WorldPage() {
                 Stop follow
               </button>
             )}
+          </div>
+        )}
+
+        {!showIntro && !isMobile && hovered && (
+          <div className="absolute right-4 bottom-4 w-[240px] space-y-1 rounded-xl border border-white/10 bg-black/70 p-3 text-xs text-white">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-400">Player</div>
+            <div className="text-sm font-semibold">{hovered.name}</div>
+            <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-300">
+              <div>Kills: {hovered.stats?.kills ?? 0}</div>
+              <div>Deaths: {hovered.stats?.deaths ?? 0}</div>
+              <div>K/D: {((hovered.stats?.kills ?? 0) / Math.max(1, hovered.stats?.deaths ?? 0)).toFixed(2)}</div>
+              <div>Mined: {hovered.stats?.blocksMined ?? 0}</div>
+              <div>Crafted: {hovered.stats?.itemsCrafted ?? 0}</div>
+              <div>Playtime: {Math.floor((hovered.stats?.playtimeMs ?? 0) / 60000)}m</div>
+            </div>
           </div>
         )}
 
