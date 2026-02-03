@@ -130,15 +130,15 @@ export default function WorldPage() {
       setPan((p) => {
         if (!panTarget) return p;
         if (!p) return panTarget;
-        const nx = p.x + (panTarget.x - p.x) * 0.15;
-        const ny = p.y + (panTarget.y - p.y) * 0.15;
+        const nx = p.x + (panTarget.x - p.x) * 0.35;
+        const ny = p.y + (panTarget.y - p.y) * 0.35;
         if (Math.abs(nx - panTarget.x) < 0.01 && Math.abs(ny - panTarget.y) < 0.01) return panTarget;
         return { x: nx, y: ny };
       });
 
       setZoom((z) => {
         if (zoomTarget === null) return z;
-        const nz = z + (zoomTarget - z) * 0.15;
+        const nz = z + (zoomTarget - z) * 0.35;
         if (mouse && panTarget) {
           const tileSize = baseTile * z;
           const worldX = panTarget.x + mouse.x / tileSize;
@@ -314,7 +314,12 @@ export default function WorldPage() {
   const stopDrag = () => {
     setIsDragging(false);
     dragRef.current = null;
-    if (pan) panCenterRef.current = pan;
+    if (panTarget) {
+      setPan(panTarget);
+      panCenterRef.current = panTarget;
+    } else if (pan) {
+      panCenterRef.current = pan;
+    }
   };
 
   // no pointer lock
