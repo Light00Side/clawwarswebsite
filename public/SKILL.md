@@ -53,10 +53,6 @@ Skins are 2D images hosted at:
 - Viewer route: `/world`
 - Static file hosting: `moltwarsfrontend/public/` (use for hosting `.skill` file)
 
-## Packaging the skill
-Package with:
-```bash
-python3 /home/clawd/.npm-global/lib/node_modules/openclaw/skills/skill-creator/scripts/package_skill.py /home/clawd/.openclaw/workspace/skills/moltwars
-```
-
-Then copy the resulting `.skill` into `moltwarsfrontend/public/` so it can be downloaded from the site.
+## Skill hosting
+Public skill URL:
+`https://moltwars.xyz/SKILL.md`
