@@ -7,7 +7,9 @@ const WORLD_WS = 'wss://server.moltwars.xyz/ws/world';
 const CDN = 'https://cdn.moltwars.xyz/skins/';
 
 type WorldSnapshot = {
-  worldSize: number;
+  worldWidth: number;
+  worldHeight: number;
+  worldSize?: number;
   tiles: number[];
   players: Array<{ id: string; name: string; x: number; y: number; skin?: string }>;
   npcs: Array<{ id: string; name: string; x: number; y: number; skin?: string }>;
@@ -129,7 +131,8 @@ export default function WorldPage() {
 
   useEffect(() => {
     if (!snapshot || !canvasRef.current) return;
-    const { worldSize, tiles, players, npcs, animals } = snapshot;
+    const { worldWidth, worldHeight, tiles, players, npcs, animals } = snapshot;
+    const worldSize = worldWidth || snapshot.worldSize || 256;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -139,7 +142,7 @@ export default function WorldPage() {
     const tileSize = Math.max(1, Math.round(baseTile * zoom));
 
     const viewW = Math.max(1, Math.min(worldSize, Math.ceil(viewport.w / tileSize)));
-    const viewH = Math.max(1, Math.min(worldSize, Math.ceil(viewport.h / tileSize)));
+    const viewH = Math.max(1, Math.min(worldHeight || worldSize, Math.ceil(viewport.h / tileSize)));
 
     // clamp handled at render time
 
@@ -147,7 +150,7 @@ export default function WorldPage() {
     let sum = 0;
     let count = 0;
     for (let x = 0; x < worldSize; x++) {
-      for (let y = 0; y < worldSize; y++) {
+      for (let y = 0; y < (worldHeight || worldSize); y++) {
         const t = tiles[y * worldSize + x];
         if (t !== SKY_TILE) {
           sum += y;
@@ -156,7 +159,7 @@ export default function WorldPage() {
         }
       }
     }
-    const surfaceY = count ? Math.floor(sum / count) : Math.floor(worldSize / 2);
+    const surfaceY = count ? Math.floor(sum / count) : Math.floor((worldHeight || worldSize) / 2);
 
     const focus =
       (follow && players.find((p) => p.name.toLowerCase() === follow.toLowerCase())) ||
@@ -184,7 +187,7 @@ export default function WorldPage() {
     }
 
     const startX = Math.max(0, Math.min(worldSize - viewW, panBase?.x ?? 0));
-    const startY = Math.max(0, Math.min(worldSize - viewH, panBase?.y ?? 0));
+    const startY = Math.max(0, Math.min((worldHeight || worldSize) - viewH, panBase?.y ?? 0));
 
     canvas.width = viewW * tileSize;
     canvas.height = viewH * tileSize;
@@ -227,7 +230,7 @@ export default function WorldPage() {
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     setZoom((z) => {
       const baseTile = showIntro ? 16 : 36;
-      const ws = snapshot?.worldSize || 256;
+      const ws = snapshot?.worldWidth || snapshot?.worldSize || 256;
       const minZoomW = viewport.w / (ws * baseTile);
       const minZoomH = viewport.h / (ws * baseTile);
       const minZoom = Math.max(0.1, minZoomW, minZoomH);
@@ -289,8 +292,9 @@ export default function WorldPage() {
                     setFollow(p.name);
                     setZoom(1.5);
                     if (snapshot) {
-                      const viewW = Math.max(1, Math.min(snapshot.worldSize, Math.ceil(viewport.w / (14 * 1.5))));
-                      const viewH = Math.max(1, Math.min(snapshot.worldSize, Math.ceil(viewport.h / (14 * 1.5))));
+                      const base = 36;
+                      const viewW = Math.max(1, Math.min(snapshot.worldWidth || snapshot.worldSize || 256, Math.ceil(viewport.w / (base * 1.5))));
+                      const viewH = Math.max(1, Math.min(snapshot.worldHeight || snapshot.worldSize || 256, Math.ceil(viewport.h / (base * 1.5))));
                       const next = { x: Math.floor(p.x - viewW / 2), y: Math.floor(p.y - viewH / 2) };
                       setPan(next);
                       panCenterRef.current = next;
