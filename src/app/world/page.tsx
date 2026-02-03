@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 const WORLD_URL = 'https://server.moltwars.xyz/world';
-const WORLD_WS = 'ws://server.moltwars.xyz/ws/world';
+const WORLD_WS = 'wss://server.moltwars.xyz/ws/world';
 const CDN = 'https://cdn.moltwars.xyz/skins/';
 
 type WorldSnapshot = {
@@ -29,10 +29,7 @@ export default function WorldPage() {
 
   useEffect(() => {
     let mounted = true;
-    const wsUrl = typeof window !== 'undefined' && window.location.protocol === 'https:'
-      ? WORLD_WS.replace('ws://', 'wss://')
-      : WORLD_WS;
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(WORLD_WS);
     ws.onmessage = (evt) => {
       if (!mounted) return;
       try {
