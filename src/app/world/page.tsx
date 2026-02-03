@@ -37,7 +37,9 @@ export default function WorldPage() {
   const [snapshot, setSnapshot] = useState<WorldSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pan, setPan] = useState<{ x: number; y: number } | null>(null);
+  const [panTarget, setPanTarget] = useState<{ x: number; y: number } | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [zoomTarget, setZoomTarget] = useState(1);
   const [viewport, setViewport] = useState({ w: 1920, h: 1080 });
   const [showIntro, setShowIntro] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -116,6 +118,32 @@ export default function WorldPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // smooth pan/zoom animation
+  useEffect(() => {
+    let raf: number;
+    const tick = () => {
+      if (panTarget) {
+        setPan((p) => {
+          if (!p) return panTarget;
+          const nx = p.x + (panTarget.x - p.x) * 0.15;
+          const ny = p.y + (panTarget.y - p.y) * 0.15;
+          if (Math.abs(nx - panTarget.x) < 0.01 && Math.abs(ny - panTarget.y) < 0.01) return panTarget;
+          return { x: nx, y: ny };
+        });
+      }
+      if (zoomTarget !== null) {
+        setZoom((z) => {
+          const nz = z + (zoomTarget - z) * 0.15;
+          if (Math.abs(nz - zoomTarget) < 0.002) return zoomTarget;
+          return nz;
+        });
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [panTarget, zoomTarget]);
+
   useEffect(() => {
     const m = window.matchMedia('(pointer: coarse)');
     const check = () => setIsMobile(m.matches || window.innerWidth < 900);
@@ -174,18 +202,15 @@ export default function WorldPage() {
     if (!panBase) {
       const initial = { x: Math.floor(focus.x - viewW / 2), y: Math.floor(surfaceY - viewH / 2) };
       setPan(initial);
+      setPanTarget(initial);
       panCenterRef.current = initial;
       panBase = initial;
     }
 
-    // soft follow: gently pull pan toward target (render-time only)
-    if (follow && focus && panBase) {
-      const targetX = Math.floor(focus.x - viewW / 2);
-      const targetY = Math.floor(focus.y - viewH / 2);
-      panBase = {
-        x: Math.floor(panBase.x + (targetX - panBase.x) * 0.05),
-        y: Math.floor(panBase.y + (targetY - panBase.y) * 0.05),
-      };
+    // soft follow: set target pan (smooth)
+    if (follow && focus) {
+      const target = { x: Math.floor(focus.x - viewW / 2), y: Math.floor(focus.y - viewH / 2) };
+      setPanTarget(target);
     }
 
     const startX = Math.max(0, Math.min(worldSize - viewW, panBase?.x ?? 0));
@@ -230,15 +255,14 @@ export default function WorldPage() {
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setZoom((z) => {
-      const baseTile = showIntro ? 16 : 36;
-      const ws = snapshot?.worldWidth || snapshot?.worldSize || 256;
-      const minZoomW = viewport.w / (ws * baseTile);
-      const minZoomH = viewport.h / (ws * baseTile);
-      const minZoom = Math.max(0.1, minZoomW, minZoomH);
-      const maxZoom = viewport.w / (100 * baseTile); // keep at least 100 tiles visible
-      return Math.min(maxZoom, Math.max(minZoom, +(z + delta).toFixed(2)));
-    });
+    const baseTile = showIntro ? 16 : 36;
+    const ws = snapshot?.worldWidth || snapshot?.worldSize || 256;
+    const minZoomW = viewport.w / (ws * baseTile);
+    const minZoomH = viewport.h / (ws * baseTile);
+    const minZoom = Math.max(0.1, minZoomW, minZoomH);
+    const maxZoom = viewport.w / (100 * baseTile); // keep at least 100 tiles visible
+    const next = Math.min(maxZoom, Math.max(minZoom, +(zoomTarget + delta).toFixed(2)));
+    setZoomTarget(next);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -253,7 +277,8 @@ export default function WorldPage() {
     const tileSize = baseTile * zoom;
     const dx = (e.clientX - dragRef.current.x) / tileSize;
     const dy = (e.clientY - dragRef.current.y) / tileSize;
-    setPan({ x: Math.floor(dragRef.current.panX - dx), y: Math.floor(dragRef.current.panY - dy) });
+    const next = { x: dragRef.current.panX - dx, y: dragRef.current.panY - dy };
+    setPanTarget(next);
   };
 
   const stopDrag = () => {
@@ -351,8 +376,8 @@ export default function WorldPage() {
                       const minZoomH = viewport.h / (wsH * baseTile);
                       const minZoom = Math.max(0.1, minZoomW, minZoomH);
                       const maxZoom = viewport.w / (100 * baseTile);
-                      const targetZoom = Math.min(maxZoom, Math.max(minZoom, zoom));
-                      setZoom(targetZoom);
+                      const targetZoom = Math.min(maxZoom, Math.max(minZoom, zoomTarget));
+                      setZoomTarget(targetZoom);
 
                       const tileSize = baseTile * targetZoom;
                       const viewW = Math.max(1, Math.min(wsW, Math.ceil(viewport.w / tileSize)));
@@ -360,7 +385,7 @@ export default function WorldPage() {
                       const surfaceY = surfaceRef.current ?? Math.floor(wsH / 2);
                       const focusX = (snapshot.players?.[0]?.x ?? wsW / 2);
                       const next = { x: Math.floor(focusX - viewW / 2), y: Math.floor(surfaceY - viewH / 2) };
-                      setPan(next);
+                      setPanTarget(next);
                       panCenterRef.current = next;
                     } else if (pan) {
                       panCenterRef.current = pan;
