@@ -270,7 +270,7 @@ export default function WorldPage() {
         </div>
 
         {!showIntro && !isMobile && (
-          <div className="absolute right-4 top-4 w-[220px] space-y-1 rounded-xl border border-white/10 bg-black/60 p-3 text-xs text-white">
+          <div className="absolute left-4 top-4 w-[220px] space-y-1 rounded-xl border border-white/10 bg-black/60 p-3 text-xs text-white">
             <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-400">Active Players</div>
             <div className="max-h-56 space-y-1 overflow-auto">
               {(snapshot?.players || []).map((p) => (
