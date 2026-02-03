@@ -25,8 +25,13 @@ const TILE_COLORS: Record<number, string> = {
 
 export default function WorldPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const [snapshot, setSnapshot] = useState<WorldSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pan, setPan] = useState<{ x: number; y: number } | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [viewport, setViewport] = useState({ w: 800, h: 600 });
 
   useEffect(() => {
     let mounted = true;
@@ -73,19 +78,38 @@ export default function WorldPage() {
   }, []);
 
   useEffect(() => {
+    const update = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      setViewport({ w: el.clientWidth, h: el.clientHeight });
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  useEffect(() => {
     if (!snapshot || !canvasRef.current) return;
     const { worldSize, tiles, players, npcs, animals } = snapshot;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Full-world side-view
-    const viewW = Math.min(666, worldSize);
-    const viewH = Math.min(256, worldSize);
-    const tileSize = 4;
+    const baseTile = 4;
+    const tileSize = baseTile * zoom;
 
-    const clampedStartX = 0;
-    const clampedStartY = Math.max(0, Math.floor(worldSize - viewH));
+    const viewW = Math.max(1, Math.floor(viewport.w / tileSize));
+    const viewH = Math.max(1, Math.floor(viewport.h / tileSize));
+
+    const focus = players[0] || npcs[0] || animals[0] || { x: worldSize / 2, y: worldSize / 2 };
+
+    if (!pan) {
+      setPan({ x: Math.floor(focus.x - viewW / 2), y: Math.floor(focus.y - viewH / 2) });
+      return;
+    }
+
+    let startX = Math.max(0, Math.min(worldSize - viewW, pan.x));
+    let startY = Math.max(0, Math.min(worldSize - viewH, pan.y));
 
     canvas.width = viewW * tileSize;
     canvas.height = viewH * tileSize;
@@ -94,8 +118,10 @@ export default function WorldPage() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     for (let y = 0; y < viewH; y++) {
+      const wy = startY + y;
       for (let x = 0; x < viewW; x++) {
-        const tile = tiles[y * worldSize + x] || 0;
+        const wx = startX + x;
+        const tile = tiles[wy * worldSize + wx] || 0;
         const color = TILE_COLORS[tile] || '#000';
         ctx.fillStyle = color;
         ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
@@ -104,8 +130,8 @@ export default function WorldPage() {
 
     const toScreen = (x: number, y: number) => {
       return {
-        sx: Math.floor((x - clampedStartX) * tileSize),
-        sy: Math.floor((y - clampedStartY) * tileSize),
+        sx: Math.floor((x - startX) * tileSize),
+        sy: Math.floor((y - startY) * tileSize),
       };
     };
 
@@ -119,13 +145,44 @@ export default function WorldPage() {
     animals.forEach((a) => drawEntity(Math.floor(a.x), Math.floor(a.y), '#F59E0B'));
     npcs.forEach((n) => drawEntity(Math.floor(n.x), Math.floor(n.y), '#22D3EE'));
     players.forEach((p) => drawEntity(Math.floor(p.x), Math.floor(p.y), '#F472B6'));
-  }, [snapshot]);
+  }, [snapshot, pan, zoom, viewport]);
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoom((z) => Math.min(4, Math.max(0.5, +(z + delta).toFixed(2))));
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    dragRef.current = { x: e.clientX, y: e.clientY, panX: pan?.x || 0, panY: pan?.y || 0 };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragRef.current) return;
+    const baseTile = 4;
+    const tileSize = baseTile * zoom;
+    const dx = (e.clientX - dragRef.current.x) / tileSize;
+    const dy = (e.clientY - dragRef.current.y) / tileSize;
+    setPan({ x: Math.floor(dragRef.current.panX - dx), y: Math.floor(dragRef.current.panY - dy) });
+  };
+
+  const stopDrag = () => {
+    dragRef.current = null;
+  };
 
   return (
     <div className="min-h-screen bg-black">
       {error && <div className="p-4 text-sm text-red-400">{error}</div>}
       {!snapshot && !error && <div className="p-4 text-sm text-zinc-400">Loading…</div>}
-      <div className="h-screen w-screen overflow-auto bg-black">
+      <div
+        ref={containerRef}
+        className="h-screen w-screen overflow-hidden bg-black"
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={stopDrag}
+        onMouseLeave={stopDrag}
+      >
         <canvas ref={canvasRef} className="block" />
       </div>
     </div>
