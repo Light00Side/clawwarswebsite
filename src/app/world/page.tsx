@@ -15,7 +15,7 @@ type WorldSnapshot = {
 };
 
 const TILE_COLORS: Record<number, string> = {
-  0: '#000000',
+  0: '#7DD3FC',
   1: '#5B3A29',
   2: '#6B7280',
   3: '#9CA3AF',
@@ -86,7 +86,7 @@ export default function WorldPage() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const baseTile = 4;
+    const baseTile = 6;
     const tileSize = baseTile * zoom;
 
     const viewW = Math.max(1, Math.ceil(viewport.w / tileSize));
@@ -150,7 +150,7 @@ export default function WorldPage() {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!dragRef.current) return;
-    const baseTile = 4;
+    const baseTile = 6;
     const tileSize = baseTile * zoom;
     const dx = (e.clientX - dragRef.current.x) / tileSize;
     const dy = (e.clientY - dragRef.current.y) / tileSize;
@@ -165,7 +165,7 @@ export default function WorldPage() {
     <div className="min-h-screen bg-black">
       {error && <div className="p-4 text-sm text-red-400">{error}</div>}
       {!snapshot && !error && <div className="p-4 text-sm text-zinc-400">Loading…</div>}
-      <div className="h-screen w-screen overflow-hidden bg-black flex items-center justify-center">
+      <div className="h-screen w-screen overflow-hidden bg-black">
         <div
           ref={containerRef}
           className="bg-black"
