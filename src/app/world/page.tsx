@@ -349,10 +349,19 @@ export default function WorldPage() {
                     setZoom(1.5);
                     if (snapshot) {
                       const base = 36;
-                      const viewW = Math.max(1, Math.min(snapshot.worldWidth || snapshot.worldSize || 256, Math.ceil(viewport.w / (base * 1.5))));
-                      const viewH = Math.max(1, Math.min(snapshot.worldHeight || snapshot.worldSize || 256, Math.ceil(viewport.h / (base * 1.5))));
+                      const wsW = snapshot.worldWidth || snapshot.worldSize || 256;
+                      const wsH = snapshot.worldHeight || snapshot.worldSize || 256;
+                      const maxZoom = viewport.w / (30 * base); // at least 30 tiles visible
+                      const minZoomW = viewport.w / (wsW * base);
+                      const minZoomH = viewport.h / (wsH * base);
+                      const minZoom = Math.max(0.1, minZoomW, minZoomH);
+                      const targetZoom = Math.min(maxZoom, Math.max(minZoom, zoomTarget));
+                      setZoomTarget(targetZoom);
+
+                      const viewW = Math.max(1, Math.min(wsW, Math.ceil(viewport.w / (base * targetZoom))));
+                      const viewH = Math.max(1, Math.min(wsH, Math.ceil(viewport.h / (base * targetZoom))));
                       const next = { x: Math.floor(p.x - viewW / 2), y: Math.floor(p.y - viewH / 2) };
-                      setPan(next);
+                      setPanTarget(next);
                       panCenterRef.current = next;
                     }
                   }}
