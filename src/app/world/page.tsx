@@ -255,7 +255,7 @@ export default function WorldPage() {
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    const delta = e.deltaY > 0 ? -0.03 : 0.03;
     const baseTile = showIntro ? 16 : 36;
     const wsW = snapshot?.worldWidth || snapshot?.worldSize || 256;
     const wsH = snapshot?.worldHeight || snapshot?.worldSize || 256;
