@@ -133,7 +133,7 @@ export default function WorldPage() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const baseTile = showIntro ? 6 : 10;
+    const baseTile = showIntro ? 6 : 14;
     const tileSize = baseTile * zoom;
 
     const viewW = Math.max(1, Math.min(worldSize, Math.floor(worldSize / 2)));
@@ -210,7 +210,7 @@ export default function WorldPage() {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (showIntro || !isLocked || !snapshot) return;
-    const baseTile = showIntro ? 6 : 10;
+    const baseTile = showIntro ? 6 : 14;
     const tileSize = baseTile * zoom;
     const dx = -e.movementX / tileSize;
     const dy = -e.movementY / tileSize;
