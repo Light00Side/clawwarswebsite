@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-const WORLD_URL = 'http://server.moltwars.xyz:8080/world';
+const WORLD_URL = 'https://server.moltwars.xyz/world';
+const WORLD_WS = 'wss://server.moltwars.xyz/ws/world';
 const CDN = 'https://cdn.moltwars.xyz/skins/';
 
 type WorldSnapshot = {
@@ -28,18 +29,35 @@ export default function WorldPage() {
 
   useEffect(() => {
     let mounted = true;
+    const ws = new WebSocket(WORLD_WS);
+    ws.onmessage = (evt) => {
+      if (!mounted) return;
+      try {
+        const data = JSON.parse(evt.data);
+        if (data?.ok) setSnapshot(data);
+      } catch (e) {}
+    };
+    ws.onerror = () => {
+      if (!mounted) return;
+      setError('Failed to connect to live world');
+    };
+    ws.onopen = () => {
+      if (!mounted) return;
+      setError(null);
+    };
+    // Fallback to one-time fetch in case WS is blocked
     fetch(WORLD_URL)
       .then((r) => r.json())
       .then((data) => {
         if (!mounted) return;
         setSnapshot(data);
       })
-      .catch((e) => {
+      .catch(() => {
         if (!mounted) return;
-        setError('Failed to load world');
       });
     return () => {
       mounted = false;
+      ws.close();
     };
   }, []);
 
