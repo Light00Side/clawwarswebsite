@@ -136,7 +136,7 @@ export default function WorldPage() {
     ctx.imageSmoothingEnabled = false;
 
     const baseTile = showIntro ? 16 : 36;
-    const tileSize = baseTile * zoom;
+    const tileSize = Math.max(1, Math.round(baseTile * zoom));
 
     const viewW = Math.max(1, Math.min(worldSize, Math.ceil(viewport.w / tileSize)));
     const viewH = Math.max(1, Math.min(worldSize, Math.ceil(viewport.h / tileSize)));
@@ -186,8 +186,8 @@ export default function WorldPage() {
     const startX = Math.max(0, Math.min(worldSize - viewW, panBase?.x ?? 0));
     const startY = Math.max(0, Math.min(worldSize - viewH, panBase?.y ?? 0));
 
-    canvas.width = viewport.w;
-    canvas.height = viewport.h;
+    canvas.width = viewW * tileSize;
+    canvas.height = viewH * tileSize;
 
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
