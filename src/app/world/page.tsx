@@ -133,6 +133,7 @@ export default function WorldPage() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
 
     const baseTile = showIntro ? 16 : 36;
     const tileSize = baseTile * zoom;
