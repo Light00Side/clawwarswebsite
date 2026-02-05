@@ -68,7 +68,7 @@ export default function WorldPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [hovered, setHovered] = useState<any | null>(null);
   const formatUtc = () => new Date().toLocaleTimeString("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit", hour12: true });
-  const [timeUtc, setTimeUtc] = useState<string>(formatUtc());
+  const [timeUtc, setTimeUtc] = useState<string>("--:--");
   const [bubbles, setBubbles] = useState<Record<string, { message: string; expiresAt: number }>>({});
   const surfaceRef = useRef<number | null>(null);
 
@@ -171,6 +171,7 @@ export default function WorldPage() {
   // pointer lock removed
 
   useEffect(() => {
+    setTimeUtc(formatUtc());
     const t = setInterval(() => setTimeUtc(formatUtc()), 1000);
     return () => clearInterval(t);
   }, []);
