@@ -328,10 +328,15 @@ export default function WorldPage() {
       ctx.lineWidth = 1;
       ctx.strokeRect(sx + 0.5, sy + 0.5, tileSize - 1, tileSize - 1);
     });
-    npcs.forEach((n) => {
+    npcs.forEach((n: any) => {
       if (npcImgRef.current?.complete) {
         const { sx, sy } = toScreen(Math.floor(n.x), Math.floor(n.y));
-        ctx.drawImage(npcImgRef.current, sx, sy, tileSize, tileSize);
+        const dir = n.goalDir === -1 ? -1 : 1;
+        ctx.save();
+        ctx.translate(sx + (dir === -1 ? tileSize : 0), sy);
+        ctx.scale(dir, 1);
+        ctx.drawImage(npcImgRef.current, 0, 0, tileSize, tileSize);
+        ctx.restore();
       } else {
         drawEntity(Math.floor(n.x), Math.floor(n.y), '#22D3EE');
       }
@@ -339,7 +344,7 @@ export default function WorldPage() {
     players.forEach((p) => {
       if (playerImgRef.current?.complete) {
         const { sx, sy } = toScreen(Math.floor(p.x), Math.floor(p.y));
-        const dir = (p.look ?? 1) === 0 ? -1 : 1;
+        const dir = (Number(p.look ?? 1) === 0) ? -1 : 1;
         ctx.save();
         ctx.translate(sx + (dir === -1 ? tileSize : 0), sy);
         ctx.scale(dir, 1);
