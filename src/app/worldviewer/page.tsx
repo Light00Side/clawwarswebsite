@@ -417,7 +417,7 @@ export default function WorldPage() {
       {error && <div className="p-4 text-sm text-red-400">{error}</div>}
       {!snapshot && !error && <div className="p-4 text-sm text-zinc-400">Loading…</div>}
       <div className="h-screen w-screen overflow-hidden bg-black flex items-center justify-center relative">
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs text-zinc-200">{timeUtc} UTC</div>
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs text-zinc-200">{timeUtc}</div>
                 <div
           ref={containerRef}
           className="bg-black w-full h-full"
