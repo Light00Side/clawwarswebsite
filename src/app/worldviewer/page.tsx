@@ -288,17 +288,17 @@ export default function WorldPage() {
 
   useEffect(() => {
     if (!wsRef.current || wsRef.current.readyState !== 1) return;
-    if (!panTarget || !snapshot) return;
+    if (!pan || !snapshot) return;
     const baseTile = showIntro ? 16 : 36;
     const tileSize = Math.max(1, Math.round(baseTile * zoomTarget));
     const wsW = snapshot.worldWidth || snapshot.worldSize || 256;
     const wsH = snapshot.worldHeight || snapshot.worldSize || 256;
     const viewW = Math.max(1, Math.min(wsW, Math.ceil(viewport.w / tileSize)));
     const viewH = Math.max(1, Math.min(wsH, Math.ceil(viewport.h / tileSize)));
-    const x = Math.max(0, Math.min(wsW - viewW, Math.floor(panTarget.x)));
-    const y = Math.max(0, Math.min(wsH - viewH, Math.floor(panTarget.y)));
+    const x = Math.max(0, Math.min(wsW - viewW, Math.floor(pan.x)));
+    const y = Math.max(0, Math.min(wsH - viewH, Math.floor(pan.y)));
     wsRef.current.send(JSON.stringify({ type: 'view', x, y, w: viewW, h: viewH }));
-  }, [panTarget, zoomTarget, viewport, snapshot, showIntro]);
+  }, [pan, zoomTarget, viewport, snapshot, showIntro]);
 
   const handleWheel = (e: React.WheelEvent) => {
     const delta = e.deltaY > 0 ? -0.03 : 0.03;
