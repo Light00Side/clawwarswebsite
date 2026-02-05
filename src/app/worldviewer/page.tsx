@@ -63,6 +63,7 @@ export default function WorldPage() {
   const [showIntro, setShowIntro] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [chat, setChat] = useState<Array<{ ts: number; message: string }>>([]);
+  const chatRef = useRef<HTMLDivElement | null>(null);
   const [follow, setFollow] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [hovered, setHovered] = useState<any | null>(null);
@@ -166,6 +167,11 @@ export default function WorldPage() {
   }, []);
 
   // pointer lock removed
+
+  useEffect(() => {
+    if (!chatRef.current) return;
+    chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [chat]);
 
   // init pan once snapshot is ready
   useEffect(() => {
@@ -463,7 +469,7 @@ export default function WorldPage() {
         {!showIntro && !isMobile && (
           <div className="absolute left-4 bottom-4 w-[420px] space-y-2 rounded-xl border border-white/10 bg-black/60 p-4 text-sm text-white">
             <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-400">World Chat</div>
-            <div className="max-h-56 space-y-1 overflow-hidden">
+            <div ref="chatRef" className="max-h-56 space-y-1 overflow-y-auto pr-1">
               {chat.slice(-12).map((c) => (
                 <div key={c.ts} className="truncate">{c.message}</div>
               ))}
