@@ -535,7 +535,7 @@ export default function WorldPage() {
                 const isSystem = c.message.startsWith('🟡 ');
                 const msg = isSystem ? c.message.replace(/^🟡\s*/, '') : c.message;
                 return (
-                  <div key={c.ts} className={isSystem ? 'truncate text-yellow-400' : 'truncate'}>{msg}</div>
+                  <div key={c.ts + msg} className={isSystem ? 'truncate text-yellow-400' : 'truncate'}>{msg}</div>
                 );
               })}
             </div>
