@@ -379,13 +379,12 @@ export default function WorldPage() {
           <div className="absolute left-4 top-4 w-[220px] space-y-1 rounded-xl border border-white/10 bg-black/60 p-3 text-xs text-white">
             <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-400">Active Players</div>
             <div className="max-h-56 space-y-1 overflow-auto">
-              {(snapshot?.players || []).map((p) => (
+              {[...(snapshot?.players || []).map(p => ({...p, kind:'player'})), ...(snapshot?.npcs || []).map(n => ({...n, kind:'npc'}))].map((p) => (
                 <button
-                  key={p.id}
+                  key={`${p.kind}-${p.id}`}
                   className={`block w-full truncate rounded px-2 py-1 text-left hover:bg-white/10 ${follow === p.name ? 'bg-white/10' : ''}`}
                   onClick={() => {
                     setFollow(p.name);
-                    setZoom(1.5);
                     if (snapshot) {
                       const base = 36;
                       const wsW = snapshot.worldWidth || snapshot.worldSize || 256;
@@ -405,7 +404,7 @@ export default function WorldPage() {
                     }
                   }}
                 >
-                  {p.name}
+                  {p.kind === 'npc' ? `[NPC] ${p.name}` : p.name}
                 </button>
               ))}
             </div>
