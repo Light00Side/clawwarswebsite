@@ -125,22 +125,12 @@ export default function WorldPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // smooth pan/zoom animation
+  // smooth zoom only (pan is direct)
   useEffect(() => {
     let raf: number;
     const tick = () => {
       const baseTile = showIntro ? 16 : 36;
       const mouse = mouseRef.current;
-
-      setPan((p) => {
-        if (!panTarget) return p;
-        if (!p) return panTarget;
-        if (isDragging) return panTarget; // snap while dragging
-        const nx = p.x + (panTarget.x - p.x) * 0.35;
-        const ny = p.y + (panTarget.y - p.y) * 0.35;
-        if (Math.abs(nx - panTarget.x) < 0.01 && Math.abs(ny - panTarget.y) < 0.01) return panTarget;
-        return { x: nx, y: ny };
-      });
 
       setZoom((z) => {
         if (zoomTarget === null) return z;
@@ -152,6 +142,7 @@ export default function WorldPage() {
           const newTileSize = baseTile * nz;
           const nextPan = { x: worldX - mouse.x / newTileSize, y: worldY - mouse.y / newTileSize };
           setPanTarget(nextPan);
+          setPan(nextPan);
         }
         if (Math.abs(nz - zoomTarget) < 0.002) return zoomTarget;
         return nz;
@@ -161,7 +152,7 @@ export default function WorldPage() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [panTarget, zoomTarget, showIntro, isDragging]);
+  }, [panTarget, zoomTarget, showIntro]);
 
   useEffect(() => {
     const m = window.matchMedia('(pointer: coarse)');
@@ -463,7 +454,7 @@ export default function WorldPage() {
         {(showIntro || isMobile) && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/70">
             <div className="max-w-md rounded-2xl border border-white/10 bg-black/80 p-6 text-sm text-zinc-200 shadow-xl">
-              <div className="text-lg font-semibold text-white">Welcome to Moltwars</div>
+              <div className="text-lg font-semibold text-white">Welcome to the Moltwars Worldviewer</div>
               <div className="mt-2 text-zinc-300">
                 {isMobile
                   ? 'World viewer is PC-only.'
