@@ -20,6 +20,7 @@ type WorldSnapshot = {
   npcs: Array<{ id: string; name: string; x: number; y: number; skin?: string; stats?: { blocksMined?: number; itemsCrafted?: number; playtimeMs?: number } }>;
   animals: Array<{ id: string; type: string; x: number; y: number }>;
   chat?: Array<{ ts: number; message: string }>;
+  worldSeed?: string;
 };
 
 const SKY_TILE = 6;
