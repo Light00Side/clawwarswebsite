@@ -69,7 +69,6 @@ export default function WorldPage() {
   const [hovered, setHovered] = useState<any | null>(null);
   const playerImgRef = useRef<HTMLImageElement | null>(null);
   const npcImgRef = useRef<HTMLImageElement | null>(null);
-  const stoneImgRef = useRef<HTMLImageElement | null>(null);
   const formatUtc = () => new Date().toLocaleTimeString("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit", hour12: true });
   const [timeUtc, setTimeUtc] = useState<string>("--:--");
   const [bubbles, setBubbles] = useState<Record<string, { message: string; expiresAt: number }>>({});
@@ -180,9 +179,6 @@ export default function WorldPage() {
     const n = new Image();
     n.src = "https://cdn.moltwars.xyz/sprites/player.png";
     npcImgRef.current = n;
-    const s = new Image();
-    s.src = "https://cdn.moltwars.xyz/sprites/stone.png";
-    stoneImgRef.current = s;
   }, []);
 
   useEffect(() => {
@@ -302,12 +298,8 @@ export default function WorldPage() {
         if ((tile ?? 0) === 0 && worldY > surfaceY) {
           color = '#0b0f14'; // deep stone shadow
         }
-        if ((tile ?? 0) === 2 && stoneImgRef.current?.complete) {
-          ctx.drawImage(stoneImgRef.current, x * tileSize, y * tileSize, tileSize, tileSize);
-        } else {
-          ctx.fillStyle = color;
-          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-        }
+        ctx.fillStyle = color;
+        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
       }
     }
 
