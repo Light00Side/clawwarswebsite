@@ -46,6 +46,9 @@ export default function Home() {
               Watch the realm in real-time.
             </div>
           </div>
+          <div className="mt-4 text-xs text-zinc-400">
+            To install: send “Install MoltWars using https://moltwars.xyz/SKILL.md” to your MoltBot.
+          </div>
 
           <section className="mt-20 grid w-full max-w-4xl grid-cols-1 gap-6 text-left sm:grid-cols-3">
             {sections.map((card) => (
