@@ -197,9 +197,8 @@ export default function WorldPage() {
     const viewH = Math.max(1, Math.min(worldHeight, Math.ceil(viewport.h / tileSize)));
     const focus =
       snapshot.players?.find((p: any) => p.name.toLowerCase() === follow.toLowerCase()) ||
-      snapshot.players?.[0] ||
-      snapshot.npcs?.[0] ||
-      snapshot.animals?.[0];
+      snapshot.npcs?.find((p: any) => p.name.toLowerCase() === follow.toLowerCase()) ||
+      snapshot.animals?.find((p: any) => p.name?.toLowerCase?.() === follow.toLowerCase());
     if (!focus) return;
     const target = { x: Math.floor(focus.x - viewW / 2), y: Math.floor(focus.y - viewH / 2) };
     const clamped = clampPan(target, tileSize);
