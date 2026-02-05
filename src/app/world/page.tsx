@@ -435,10 +435,10 @@ export default function WorldPage() {
         )}
 
         {!showIntro && !isMobile && (
-          <div className="absolute left-4 bottom-4 w-[320px] space-y-1 rounded-xl border border-white/10 bg-black/60 p-3 text-xs text-white">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-400">World Chat</div>
-            <div className="max-h-40 space-y-1 overflow-hidden">
-              {chat.slice(-8).map((c) => (
+          <div className="absolute left-4 bottom-4 w-[420px] space-y-2 rounded-xl border border-white/10 bg-black/60 p-4 text-sm text-white">
+            <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-400">World Chat</div>
+            <div className="max-h-56 space-y-1 overflow-hidden">
+              {chat.slice(-12).map((c) => (
                 <div key={c.ts} className="truncate">{c.message}</div>
               ))}
             </div>
