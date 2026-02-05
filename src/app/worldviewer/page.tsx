@@ -16,7 +16,7 @@ type WorldSnapshot = {
   y?: number;
   w?: number;
   h?: number;
-  players: Array<{ id: string; name: string; x: number; y: number; skin?: string }>;
+  players: Array<{ id: string; name: string; x: number; y: number; skin?: string; look?: number }>;
   npcs: Array<{ id: string; name: string; x: number; y: number; skin?: string; stats?: { blocksMined?: number; itemsCrafted?: number; playtimeMs?: number } }>;
   animals: Array<{ id: string; type: string; x: number; y: number }>;
   chat?: Array<{ ts: number; message: string }>;
