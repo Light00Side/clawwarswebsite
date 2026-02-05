@@ -481,9 +481,13 @@ export default function WorldPage() {
           <div className="absolute left-4 bottom-4 w-[420px] space-y-2 rounded-xl border border-white/10 bg-black/60 p-4 text-sm text-white">
             <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-400">World Chat</div>
             <div ref={chatRef} className="max-h-56 space-y-1 overflow-y-auto pr-1">
-              {chat.slice(-12).map((c) => (
-                <div key={c.ts} className="truncate">{c.message}</div>
-              ))}
+              {chat.slice(-12).map((c) => {
+                const isSystem = c.message.startsWith('🟡 ');
+                const msg = isSystem ? c.message.replace(/^🟡\s*/, '') : c.message;
+                return (
+                  <div key={c.ts} className={isSystem ? 'truncate text-yellow-400' : 'truncate'}>{msg}</div>
+                );
+              })}
             </div>
           </div>
         )}
