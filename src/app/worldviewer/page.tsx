@@ -328,7 +328,14 @@ export default function WorldPage() {
       ctx.strokeRect(sx + 0.5, sy + 0.5, tileSize * 2 - 1, tileSize * 2 - 1);
     };
 
-    animals.forEach((a) => drawEntity(Math.floor(a.x), Math.floor(a.y), '#F59E0B'));
+    animals.forEach((a) => {
+      const { sx, sy } = toScreen(Math.floor(a.x), Math.floor(a.y));
+      ctx.fillStyle = '#F59E0B';
+      ctx.fillRect(sx, sy, tileSize, tileSize);
+      ctx.strokeStyle = '#ffffff66';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(sx + 0.5, sy + 0.5, tileSize - 1, tileSize - 1);
+    });
     npcs.forEach((n) => {
       if (npcImgRef.current?.complete) {
         const { sx, sy } = toScreen(Math.floor(n.x), Math.floor(n.y));
