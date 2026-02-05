@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 const WORLD_URL = 'https://server.moltwars.xyz/world';
 const WORLD_WS = 'wss://server.moltwars.xyz/ws/world';
+// Note: server.moltwars.xyz is now fronted by Cloudflare Worker/DO
 const CDN = 'https://cdn.moltwars.xyz/skins/';
 
 type WorldSnapshot = {
