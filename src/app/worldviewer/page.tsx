@@ -174,10 +174,10 @@ export default function WorldPage() {
 
   useEffect(() => {
     const p = new Image();
-    p.src = "https://cdn.moltwars.xyz/sprites/player.png";
+    p.src = "https://cdn.moltwars.xyz/sprites/molt.png";
     playerImgRef.current = p;
     const n = new Image();
-    n.src = "https://cdn.moltwars.xyz/sprites/player.png";
+    n.src = "https://cdn.moltwars.xyz/sprites/molt.png";
     npcImgRef.current = n;
   }, []);
 
