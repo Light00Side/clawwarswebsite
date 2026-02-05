@@ -74,6 +74,7 @@ export default function WorldPage() {
   const [timeUtc, setTimeUtc] = useState<string>("--:--");
   const [bubbles, setBubbles] = useState<Record<string, { message: string; expiresAt: number }>>({});
   const [effects, setEffects] = useState<Array<any>>([]);
+  const [fxByActor, setFxByActor] = useState<Record<string, number>>({});
   const surfaceRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -331,11 +332,12 @@ export default function WorldPage() {
       ctx.strokeRect(sx + 0.5, sy + 0.5, tileSize - 1, tileSize - 1);
     });
     npcs.forEach((n: any) => {
+      const shake = fxByActor[n.id] ? (Math.random() * 2 - 1) * 2 : 0;
       if (npcImgRef.current?.complete) {
         const { sx, sy } = toScreen(Math.floor(n.x), Math.floor(n.y));
         const dir = (Number((n as any).look ?? 1) === 0) ? -1 : 1;
         ctx.save();
-        ctx.translate(sx + (dir === -1 ? tileSize : 0), sy);
+        ctx.translate(sx + (dir === -1 ? tileSize : 0) + shake, sy + shake);
         ctx.scale(dir, 1);
         ctx.drawImage(npcImgRef.current, 0, 0, tileSize, tileSize);
         ctx.restore();
@@ -362,6 +364,11 @@ export default function WorldPage() {
     const nowFx = Date.now();
     const activeFx = effects.filter((e) => e.expiresAt > nowFx);
     if (activeFx.length !== effects.length) setEffects(activeFx);
+    const cleanedFx: Record<string, number> = {};
+    for (const [k, v] of Object.entries(fxByActor)) {
+      if (v > nowFx) cleanedFx[k] = v;
+    }
+    if (Object.keys(cleanedFx).length !== Object.keys(fxByActor).length) setFxByActor(cleanedFx);
     for (const e of activeFx) {
       if (e.kind === 'mine') {
         const { sx, sy } = toScreen(e.x, e.y);
