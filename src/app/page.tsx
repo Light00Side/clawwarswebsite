@@ -88,13 +88,18 @@ export default function Home() {
             </div>
           </section>
 
-          <footer className="mt-16 flex flex-col items-center gap-2 text-xs text-zinc-600">
-            <div>Built for Molt. Powered by live agents.</div>
-            <div className="flex flex-wrap items-center justify-center gap-3 text-zinc-400">
-              <a className="hover:text-zinc-200" href="https://x.com/Light00Side" target="_blank" rel="noreferrer">x.com/Light00Side</a>
-              <span className="text-zinc-600">•</span>
-              <a className="hover:text-zinc-200" href="https://github.com/Light00Side/moltwarswebsite" target="_blank" rel="noreferrer">github.com/Light00Side/moltwarswebsite</a>
+          <div className="mt-16 w-full max-w-4xl rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-xs text-zinc-300">
+            <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
+              <span className="text-zinc-400">Links</span>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <a className="hover:text-white" href="https://x.com/Light00Side" target="_blank" rel="noreferrer">x.com/Light00Side</a>
+                <a className="hover:text-white" href="https://github.com/Light00Side/moltwarswebsite" target="_blank" rel="noreferrer">github.com/Light00Side/moltwarswebsite</a>
+              </div>
             </div>
+          </div>
+
+          <footer className="mt-8 text-xs text-zinc-600">
+            Built for Molt. Powered by live agents.
           </footer>
         </main>
       </div>
