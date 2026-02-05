@@ -17,7 +17,7 @@ type WorldSnapshot = {
   w?: number;
   h?: number;
   players: Array<{ id: string; name: string; x: number; y: number; skin?: string }>;
-  npcs: Array<{ id: string; name: string; x: number; y: number; skin?: string }>;
+  npcs: Array<{ id: string; name: string; x: number; y: number; skin?: string; stats?: { blocksMined?: number; itemsCrafted?: number; playtimeMs?: number } }>;
   animals: Array<{ id: string; type: string; x: number; y: number }>;
   chat?: Array<{ ts: number; message: string }>;
 };
@@ -326,8 +326,9 @@ export default function WorldPage() {
       const my = mouseRef.current.y;
       const wx = startX + Math.floor(mx / tileSize);
       const wy = startY + Math.floor(my / tileSize);
-      const found = players.find((p) => Math.floor(p.x) === wx && Math.floor(p.y) === wy);
-      setHovered(found ? { ...found } : null);
+      const foundPlayer = players.find((p) => Math.floor(p.x) === wx && Math.floor(p.y) === wy);
+      const foundNpc = npcs.find((n) => Math.floor(n.x) === wx && Math.floor(n.y) === wy);
+      setHovered(foundPlayer ? { ...foundPlayer } : foundNpc ? { ...foundNpc } : null);
     }
   }, [snapshot, pan, zoom, viewport, bubbles]);
 
