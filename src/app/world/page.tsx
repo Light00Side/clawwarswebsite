@@ -48,6 +48,7 @@ export default function WorldPage() {
   const [follow, setFollow] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [hovered, setHovered] = useState<any | null>(null);
+  const [bubbles, setBubbles] = useState<Record<string, { message: string; expiresAt: number }>>({});
   const surfaceRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -64,6 +65,13 @@ export default function WorldPage() {
         if (data?.ok) {
           setSnapshot(data);
           if (Array.isArray(data.chat)) setChat(data.chat);
+        }
+        if (data?.type === 'npcChat' && data.npcId) {
+          const ttl = data.ttlMs || 6000;
+          setBubbles((b) => ({
+            ...b,
+            [data.npcId]: { message: data.message, expiresAt: Date.now() + ttl },
+          }));
         }
       } catch (e) {
         console.warn('[world] bad message', e);
@@ -267,6 +275,31 @@ export default function WorldPage() {
     npcs.forEach((n) => drawEntity(Math.floor(n.x), Math.floor(n.y), '#22D3EE'));
     players.forEach((p) => drawEntity(Math.floor(p.x), Math.floor(p.y), '#F472B6'));
 
+    // bubble cleanup
+    const now = Date.now();
+    const cleaned: Record<string, { message: string; expiresAt: number }> = {};
+    for (const [id, b] of Object.entries(bubbles)) {
+      if (b.expiresAt > now) cleaned[id] = b;
+    }
+    if (Object.keys(cleaned).length !== Object.keys(bubbles).length) setBubbles(cleaned);
+
+    // npc speech bubbles
+    for (const n of npcs) {
+      const b = bubbles[n.id];
+      if (!b) continue;
+      const { sx, sy } = toScreen(Math.floor(n.x), Math.floor(n.y));
+      if (sx < 0 || sy < 0 || sx >= canvas.width || sy >= canvas.height) continue;
+      ctx.font = '12px sans-serif';
+      const text = b.message;
+      const padding = 4;
+      const w = Math.min(220, ctx.measureText(text).width + padding * 2);
+      const h = 18;
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(sx - w / 2, sy - h - 6, w, h);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(text, sx - w / 2 + padding, sy - 8);
+    }
+
     // hover detection (players only)
     if (mouseRef.current) {
       const mx = mouseRef.current.x;
@@ -276,7 +309,7 @@ export default function WorldPage() {
       const found = players.find((p) => Math.floor(p.x) === wx && Math.floor(p.y) === wy);
       setHovered(found ? { ...found } : null);
     }
-  }, [snapshot, pan, zoom, viewport]);
+  }, [snapshot, pan, zoom, viewport, bubbles]);
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
