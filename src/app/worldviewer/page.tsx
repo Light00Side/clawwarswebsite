@@ -37,6 +37,7 @@ const TILE_COLORS: Record<number, string> = {
 
 export default function WorldPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const minimapRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const mouseRef = useRef<{ x: number; y: number } | null>(null);
@@ -398,6 +399,71 @@ export default function WorldPage() {
         ctx.stroke();
       }
     }
+
+    // lighting overlay
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, 'rgba(0,0,0,0)');
+    gradient.addColorStop(0.35, 'rgba(0,0,0,0.15)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0.55)');
+    ctx.save();
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.globalCompositeOperation = 'destination-out';
+    const glow = (x: number, y: number, r: number, strength = 0.9) => {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(255,255,255,${strength})`);
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    for (const n of npcs) {
+      const { sx, sy } = toScreen(Math.floor(n.x), Math.floor(n.y));
+      glow(sx + tileSize / 2, sy + tileSize / 2, tileSize * 3.2, 0.8);
+    }
+    for (const p of players) {
+      const { sx, sy } = toScreen(Math.floor(p.x), Math.floor(p.y));
+      glow(sx + tileSize / 2, sy + tileSize / 2, tileSize * 3.6, 0.9);
+    }
+    for (const a of animals) {
+      const { sx, sy } = toScreen(Math.floor(a.x), Math.floor(a.y));
+      glow(sx + tileSize / 2, sy + tileSize / 2, tileSize * 2.2, 0.6);
+    }
+    ctx.restore();
+    ctx.globalCompositeOperation = 'source-over';
+
+    // draw minimap
+    const mini = minimapRef.current;
+    if (mini) {
+      const maxW = 220;
+      const maxH = 140;
+      const scale = Math.min(maxW / worldSize, maxH / (worldHeight || worldSize));
+      mini.width = Math.floor(worldSize * scale);
+      mini.height = Math.floor((worldHeight || worldSize) * scale);
+      const mctx = mini.getContext('2d');
+      if (mctx) {
+        mctx.imageSmoothingEnabled = false;
+        mctx.clearRect(0, 0, mini.width, mini.height);
+        for (let y = 0; y < (worldHeight || worldSize); y++) {
+          for (let x = 0; x < worldSize; x++) {
+            const t = is2d ? (tiles as number[][])?.[y]?.[x] : (tiles as number[])[y * worldSize + x];
+            let c = TILE_COLORS[t ?? 0] || '#000';
+            if ((t ?? 0) === 0 && y > surfaceY) c = '#0b0f14';
+            mctx.fillStyle = c;
+            mctx.fillRect(x * scale, y * scale, Math.ceil(scale), Math.ceil(scale));
+          }
+        }
+        // view rect
+        mctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        mctx.lineWidth = 1;
+        mctx.strokeRect(startX * scale, startY * scale, viewWActual * scale, viewHActual * scale);
+        // focus dot
+        mctx.fillStyle = '#f472b6';
+        mctx.fillRect(focus.x * scale - 1, focus.y * scale - 1, 3, 3);
+      }
+    }
     // bubble cleanup
     const now = Date.now();
     const cleaned: Record<string, { message: string; expiresAt: number }> = {};
@@ -514,6 +580,11 @@ export default function WorldPage() {
           onMouseLeave={stopDrag}
         >
           <canvas ref={canvasRef} className="block w-full h-full" />
+          {!showIntro && !isMobile && (
+            <div className="absolute right-4 top-14 rounded-xl border border-white/10 bg-black/60 p-2">
+              <canvas ref={minimapRef} className="minimap-canvas block" />
+            </div>
+          )}
         </div>
 
         {!showIntro && !isMobile && (
