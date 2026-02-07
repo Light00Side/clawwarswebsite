@@ -166,7 +166,11 @@ export default function WorldPage() {
     let mounted = true;
     const params = new URLSearchParams(window.location.search);
     const followParam = params.get('follow');
-    if (followParam) setFollow(followParam);
+    if (followParam) {
+      setFollow(followParam);
+      setShowIntro(false); // skip intro when auto-following
+      setZoomTarget(2); // zoom in close
+    }
     console.log('[world] connecting', WORLD_WS);
     const ws = new WebSocket(WORLD_WS);
     wsRef.current = ws;
@@ -505,19 +509,19 @@ export default function WorldPage() {
         
         ctx.drawImage(npcImgRef.current, 0, 0, tileSize, tileSize);
         ctx.filter = 'none';
+        ctx.restore();
         
-        // Draw sword when fighting
-        if (isFighting && swordImgRef.current?.complete) {
+        // Draw sword (always visible, swing when fighting) - outside NPC transform
+        if (swordImgRef.current?.complete) {
           ctx.save();
-          const swingAngle = Math.sin(Date.now() / 50) * 0.5; // swing animation
-          const swordX = dir === 1 ? tileSize * 0.7 : -tileSize * 0.3;
-          ctx.translate(swordX, tileSize * 0.3);
-          ctx.rotate(dir === 1 ? swingAngle - 0.3 : -swingAngle + 0.3 + Math.PI);
-          ctx.drawImage(swordImgRef.current, 0, 0, tileSize * 0.8, tileSize * 0.8);
+          const swingAngle = isFighting ? Math.sin(Date.now() / 30) * 1.2 : Math.sin(Date.now() / 100) * 0.4; // always swinging
+          const swordScreenX = sx + (dir === 1 ? tileSize * 0.35 : tileSize * 0.65);
+          ctx.translate(swordScreenX + shake, sy + tileSize * 0.5 + shake);
+          ctx.scale(dir, 1); // flip sword when facing left
+          ctx.rotate(-0.5 + swingAngle); // wider base angle for bigger swing arc
+          ctx.drawImage(swordImgRef.current, -tileSize * 0.2, -tileSize * 0.2, tileSize * 0.4, tileSize * 0.4);
           ctx.restore();
         }
-        
-        ctx.restore();
       } else {
         const color = isDamaged ? '#ff4444' : '#22D3EE';
         drawEntity(Math.floor(n.x), Math.floor(n.y), color);
