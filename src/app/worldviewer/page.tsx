@@ -1,5 +1,63 @@
 'use client';
 
+const medievalStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+  
+  .medieval-ui {
+    font-family: 'MedievalSharp', cursive;
+  }
+  
+  /* Medieval themed scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #1a1410;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #5a4632 0%, #3d2f1f 100%);
+    border-radius: 4px;
+    border: 1px solid #2a1f15;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #7a5a42 0%, #4d3f2f 100%);
+  }
+  ::-webkit-scrollbar-corner {
+    background: #1a1410;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #5a4632 #1a1410;
+  }
+  
+  .scroll-panel {
+    background: linear-gradient(180deg, #1a1410 0%, #0d0a08 100%);
+    border: 2px solid #3d2f1f;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5), inset 0 0 0 1px #5a4632;
+  }
+  
+  .parchment-text {
+    color: #c4a574;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  }
+  
+  .gold-text {
+    color: #d4a855;
+    text-shadow: 0 0 4px rgba(212, 168, 85, 0.3);
+  }
+  
+  .copper-accent {
+    border-color: #8b5a2b !important;
+  }
+  
+  .stone-bg {
+    background: radial-gradient(ellipse at center, #1a1614 0%, #0a0806 100%);
+  }
+`;
+
+
 import { useEffect, useRef, useState } from 'react';
 
 const WORLD_URL = 'https://server.moltwars.xyz/world';
@@ -26,18 +84,34 @@ type WorldSnapshot = {
 const SKY_TILE = 6;
 
 const TILE_COLORS: Record<number, string> = {
-  0: '#000000',
-  1: '#5B3A29',
-  2: '#6B7280',
-  3: '#9CA3AF',
-  4: '#2F7D32',
-  5: '#4ADE80',
-  6: '#5FADEB',
+  0: '#0a0a0a',    // void/cave
+  1: '#6B4423',    // dirt - rich brown
+  2: '#5a5a6a',    // stone - blue-gray
+  3: '#8a8a9a',    // light stone
+  4: '#2d5a1e',    // grass block
+  5: '#3cb043',    // leaves
+  6: '#87CEEB',    // sky
+};
+
+// Seeded random for consistent variation
+const seededRand = (x: number, y: number) => {
+  const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return n - Math.floor(n);
+};
+
+// Darken/lighten color
+const adjustColor = (hex: string, amt: number): string => {
+  const num = parseInt(hex.slice(1), 16);
+  const r = Math.min(255, Math.max(0, ((num >> 16) & 0xff) + amt));
+  const g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + amt));
+  const b = Math.min(255, Math.max(0, (num & 0xff) + amt));
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
 };
 
 export default function WorldPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const minimapRef = useRef<HTMLCanvasElement | null>(null);
+  const lastMiniRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const mouseRef = useRef<{ x: number; y: number } | null>(null);
@@ -77,6 +151,15 @@ export default function WorldPage() {
   const [effects, setEffects] = useState<Array<any>>([]);
   const [fxByActor, setFxByActor] = useState<Record<string, number>>({});
   const surfaceRef = useRef<number | null>(null);
+
+  // Inject medieval styles
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = medievalStyles;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
+
 
   useEffect(() => {
     let mounted = true;
@@ -226,7 +309,7 @@ export default function WorldPage() {
     const target = { x: Math.floor(focus.x - viewW / 2), y: Math.floor(focus.y - viewH / 2) };
     const clamped = clampPan(target, tileSize);
     if (!samePan(pan, clamped)) setPan(clamped);
-  }, [follow, snapshot, viewport, zoom, showIntro, pan]);
+  }, [follow, snapshot, viewport, zoom, showIntro]);
 
   useEffect(() => {
     if (!follow || !snapshot) return;
@@ -237,6 +320,22 @@ export default function WorldPage() {
     else if (n) setHovered({ ...n });
     else if (a) setHovered({ ...a });
   }, [follow, snapshot]);
+
+  // Calculate surface once when world loads
+  useEffect(() => {
+    if (!snapshot) return;
+    if (surfaceRef.current !== null) return; // already calculated
+    const { worldWidth, worldHeight, tiles } = snapshot;
+    const worldSize = worldWidth || snapshot.worldSize || 256;
+    let sum = 0, count = 0;
+    for (let x = 0; x < worldSize; x += 10) { // sample every 10th column
+      for (let y = 0; y < (worldHeight || worldSize); y++) {
+        const t = (tiles as number[])[y * worldSize + x];
+        if (t !== SKY_TILE) { sum += y; count++; break; }
+      }
+    }
+    surfaceRef.current = count ? Math.floor(sum / count) : Math.floor((worldHeight || worldSize) / 3);
+  }, [snapshot?.worldSeed]);
 
   useEffect(() => {
     if (!snapshot || !canvasRef.current) return;
@@ -258,21 +357,8 @@ export default function WorldPage() {
 
     // clamp handled at render time
 
-    // compute global surface (y=0 reference) as average first non-sky tile
-    let sum = 0;
-    let count = 0;
-    for (let x = 0; x < worldSize; x++) {
-      for (let y = 0; y < (worldHeight || worldSize); y++) {
-        const t = tiles[y * worldSize + x];
-        if (t !== SKY_TILE) {
-          sum += y;
-          count += 1;
-          break;
-        }
-      }
-    }
-    const surfaceY = count ? Math.floor(sum / count) : Math.floor((worldHeight || worldSize) / 2);
-    surfaceRef.current = surfaceY;
+    // use cached surfaceY (computed once on load)
+    const surfaceY = surfaceRef.current ?? Math.floor((worldHeight || worldSize) / 3);
 
     const focus =
       (follow && players.find((p) => p.name.toLowerCase() === follow.toLowerCase())) ||
@@ -294,16 +380,79 @@ export default function WorldPage() {
 
     for (let y = 0; y < viewHActual; y++) {
       for (let x = 0; x < viewWActual; x++) {
+        const worldX = startX + x;
+        const worldY = startY + y;
         const tile = is2d
           ? (tiles as number[][])?.[y]?.[x]
-          : (tiles as number[])[(startY + y) * worldSize + (startX + x)];
-        let color = TILE_COLORS[tile ?? 0] || '#000';
-        const worldY = startY + y;
-        if ((tile ?? 0) === 0 && worldY > surfaceY) {
-          color = '#0b0f14'; // deep stone shadow
+          : (tiles as number[])[(worldY) * worldSize + (worldX)];
+        const tileType = tile ?? 0;
+        let baseColor = TILE_COLORS[tileType] || '#000';
+        
+        // Depth-based darkness (underground gets darker/bluer)
+        const depthRatio = Math.max(0, (worldY - surfaceY) / ((worldHeight || worldSize) - surfaceY));
+        const depthDarken = Math.floor(depthRatio * 40);
+        
+        // Void/cave underground
+        if (tileType === 0 && worldY > surfaceY) {
+          const caveDark = Math.floor(depthRatio * 20);
+          baseColor = adjustColor('#0a0e14', -caveDark);
         }
+        
+        // Color variation based on position (seeded)
+        const variation = Math.floor((seededRand(worldX, worldY) - 0.5) * 20);
+        let color = adjustColor(baseColor, variation - depthDarken);
+        
+        // Draw base tile
         ctx.fillStyle = color;
         ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        
+        // Tile outline (dark edge) for solid blocks
+        if (tileType !== 0 && tileType !== 6 && tileSize >= 4) {
+          ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x * tileSize + 0.5, y * tileSize + 0.5, tileSize - 1, tileSize - 1);
+        }
+        
+        // Grass tufts on surface dirt/grass
+        if ((tileType === 1 || tileType === 4) && tileSize >= 6) {
+          const aboveTile = is2d 
+            ? (tiles as number[][])?.[y-1]?.[x]
+            : (tiles as number[])[(worldY - 1) * worldSize + worldX];
+          if (aboveTile === 6 || aboveTile === 0 || worldY <= surfaceY) {
+            ctx.fillStyle = '#3cb043';
+            const tx = x * tileSize;
+            const ty = y * tileSize;
+            // Draw grass blades - lush and varied
+            const bladeCount = Math.max(5, Math.floor(tileSize / 4));
+            for (let g = 0; g < bladeCount; g++) {
+              const seed1 = seededRand(worldX * 7 + g, worldY * 13);
+              const seed2 = seededRand(worldX * 11 + g, worldY * 3);
+              const gx = tx + (g / bladeCount) * tileSize + seed1 * (tileSize / bladeCount);
+              const gh = tileSize * 0.3 + seed2 * tileSize * 0.5;
+              const gw = Math.max(1, tileSize / 10);
+              // Vary the green
+              const greenShade = Math.floor(seed1 * 40);
+              ctx.fillStyle = `rgb(${50 + greenShade}, ${160 + Math.floor(seed2 * 40)}, ${50 + greenShade})`;
+              // Draw tapered blade (triangle)
+              ctx.beginPath();
+              ctx.moveTo(gx, ty);
+              ctx.lineTo(gx + gw / 2, ty - gh);
+              ctx.lineTo(gx + gw, ty);
+              ctx.closePath();
+              ctx.fill();
+            }
+          }
+        }
+        
+        // Ore sparkle on stone
+        if ((tileType === 2 || tileType === 3) && tileSize >= 6) {
+          if (seededRand(worldX * 3, worldY * 7) > 0.85) {
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            const sx = x * tileSize + seededRand(worldX, worldY * 2) * (tileSize - 4) + 2;
+            const sy = y * tileSize + seededRand(worldX * 2, worldY) * (tileSize - 4) + 2;
+            ctx.fillRect(sx, sy, 2, 2);
+          }
+        }
       }
     }
 
@@ -333,17 +482,49 @@ export default function WorldPage() {
       ctx.strokeRect(sx + 0.5, sy + 0.5, tileSize - 1, tileSize - 1);
     });
     npcs.forEach((n: any) => {
-      const shake = fxByActor[n.id] ? (Math.random() * 2 - 1) * 2 : 0;
+      const now = Date.now();
+      const isDamaged = n.damagedUntil && now < n.damagedUntil;
+      const isFighting = n.fightingUntil && now < n.fightingUntil;
+      const shake = (isDamaged || fxByActor[n.id]) ? (Math.random() * 2 - 1) * 3 : 0;
+      const { sx, sy } = toScreen(Math.floor(n.x), Math.floor(n.y));
+      
       if (npcImgRef.current?.complete) {
-        const { sx, sy } = toScreen(Math.floor(n.x), Math.floor(n.y));
         const dir = (Number((n as any).look ?? 1) === 0) ? -1 : 1;
         ctx.save();
         ctx.translate(sx + (dir === -1 ? tileSize : 0) + shake, sy + shake);
         ctx.scale(dir, 1);
+        
+        // Red tint when damaged
+        if (isDamaged) {
+          ctx.filter = 'sepia(1) saturate(5) hue-rotate(-50deg) brightness(1.2)';
+        }
+        
         ctx.drawImage(npcImgRef.current, 0, 0, tileSize, tileSize);
+        ctx.filter = 'none';
+        
+        // Draw sword swing arc when fighting
+        if (isFighting) {
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          const swingX = dir === 1 ? tileSize : 0;
+          ctx.arc(swingX, tileSize / 2, tileSize * 0.8, -0.5, 0.5);
+          ctx.stroke();
+        }
+        
         ctx.restore();
       } else {
-        drawEntity(Math.floor(n.x), Math.floor(n.y), '#22D3EE');
+        const color = isDamaged ? '#ff4444' : '#22D3EE';
+        drawEntity(Math.floor(n.x), Math.floor(n.y), color);
+      }
+      
+      // Health bar if damaged
+      if (n.hp < (n.maxHp || 100)) {
+        const hpRatio = n.hp / (n.maxHp || 100);
+        ctx.fillStyle = '#333';
+        ctx.fillRect(sx, sy - 4, tileSize, 3);
+        ctx.fillStyle = hpRatio > 0.5 ? '#4ade80' : hpRatio > 0.25 ? '#facc15' : '#ef4444';
+        ctx.fillRect(sx, sy - 4, tileSize * hpRatio, 3);
       }
     });
     players.forEach((p) => {
@@ -400,46 +581,14 @@ export default function WorldPage() {
       }
     }
 
-    // lighting overlay
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, 'rgba(0,0,0,0)');
-    gradient.addColorStop(0.35, 'rgba(0,0,0,0.15)');
-    gradient.addColorStop(1, 'rgba(0,0,0,0.55)');
-    ctx.save();
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.globalCompositeOperation = 'destination-out';
-    const glow = (x: number, y: number, r: number, strength = 0.9) => {
-      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, `rgba(255,255,255,${strength})`);
-      g.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    };
-    for (const n of npcs) {
-      const { sx, sy } = toScreen(Math.floor(n.x), Math.floor(n.y));
-      glow(sx + tileSize / 2, sy + tileSize / 2, tileSize * 3.2, 0.8);
-    }
-    for (const p of players) {
-      const { sx, sy } = toScreen(Math.floor(p.x), Math.floor(p.y));
-      glow(sx + tileSize / 2, sy + tileSize / 2, tileSize * 3.6, 0.9);
-    }
-    for (const a of animals) {
-      const { sx, sy } = toScreen(Math.floor(a.x), Math.floor(a.y));
-      glow(sx + tileSize / 2, sy + tileSize / 2, tileSize * 2.2, 0.6);
-    }
-    ctx.restore();
-    ctx.globalCompositeOperation = 'source-over';
-
     // draw minimap
     const mini = minimapRef.current;
-    if (mini) {
-      const maxW = 220;
-      const maxH = 140;
-      const scale = Math.min(maxW / worldSize, maxH / (worldHeight || worldSize));
+    if (mini && Date.now() - lastMiniRef.current >= 2000) {
+      lastMiniRef.current = Date.now();
+      const maxW = 900;
+      const maxH = 600;
+      const scale = Math.min(maxW / worldSize, maxH / (worldHeight || worldSize)) * 0.5;
+      const step = 60;
       mini.width = Math.floor(worldSize * scale);
       mini.height = Math.floor((worldHeight || worldSize) * scale);
       const mctx = mini.getContext('2d');
@@ -455,11 +604,9 @@ export default function WorldPage() {
             mctx.fillRect(x * scale, y * scale, Math.ceil(scale), Math.ceil(scale));
           }
         }
-        // view rect
         mctx.strokeStyle = 'rgba(255,255,255,0.6)';
         mctx.lineWidth = 1;
         mctx.strokeRect(startX * scale, startY * scale, viewWActual * scale, viewHActual * scale);
-        // focus dot
         mctx.fillStyle = '#f472b6';
         mctx.fillRect(focus.x * scale - 1, focus.y * scale - 1, 3, 3);
       }
@@ -516,14 +663,14 @@ export default function WorldPage() {
   }, [pan, zoomTarget, viewport, snapshot, showIntro]);
 
   const handleWheel = (e: React.WheelEvent) => {
-    const delta = e.deltaY > 0 ? -0.03 : 0.03;
+    const delta = e.deltaY > 0 ? -0.06 : 0.06;
     const baseTile = showIntro ? 16 : 36;
     const wsW = snapshot?.worldWidth || snapshot?.worldSize || 256;
     const wsH = snapshot?.worldHeight || snapshot?.worldSize || 256;
     const minZoomW = viewport.w / (wsW * baseTile);
     const minZoomH = viewport.h / (wsH * baseTile);
     const minZoom = Math.max(0.1, minZoomW, minZoomH);
-    const minTiles = follow ? 40 : 100;
+    const minTiles = follow ? 30 : 75;
     const maxZoom = viewport.w / (minTiles * baseTile); // keep at least minTiles visible
     const next = Math.min(maxZoom, Math.max(minZoom, +(zoomTarget + delta).toFixed(2)));
     // zoom towards cursor
@@ -564,14 +711,14 @@ export default function WorldPage() {
   // no pointer lock
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen stone-bg medieval-ui">
       {error && <div className="p-4 text-sm text-red-400">{error}</div>}
       {!snapshot && !error && <div className="p-4 text-sm text-zinc-400">Loading…</div>}
-      <div className="h-screen w-screen overflow-hidden bg-black flex items-center justify-center relative">
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs text-zinc-200">{timeUtc} {snapshot?.worldSeed ? `· seed ${snapshot.worldSeed}` : ''}</div>
+      <div className="h-screen w-screen overflow-hidden stone-bg relative">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 scroll-panel rounded px-4 py-2 text-xs parchment-text z-20">{timeUtc} {snapshot?.worldSeed ? `· seed ${snapshot.worldSeed}` : ''}</div>
                 <div
           ref={containerRef}
-          className="bg-black w-full h-full"
+          className="stone-bg w-full h-full absolute inset-0"
           style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
@@ -580,28 +727,28 @@ export default function WorldPage() {
           onMouseLeave={stopDrag}
         >
           <canvas ref={canvasRef} className="block w-full h-full" />
-          {!showIntro && !isMobile && (
-            <div className="absolute right-4 top-14 rounded-xl border border-white/10 bg-black/60 p-2">
-              <canvas ref={minimapRef} className="minimap-canvas block" />
-            </div>
-          )}
         </div>
+        {!showIntro && !isMobile && (
+          <div className="fixed right-4 top-4 scroll-panel rounded p-2 z-20">
+            <canvas ref={minimapRef} className="minimap-canvas block" />
+          </div>
+        )}
 
         {!showIntro && !isMobile && (
-          <div className="absolute left-4 top-4 w-[220px] space-y-1 rounded-xl border border-white/10 bg-black/60 p-3 text-xs text-white">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-400">Active Players</div>
-            <div className="max-h-56 space-y-1 overflow-auto">
+          <div className="fixed left-4 top-4 w-[220px] space-y-1 scroll-panel rounded p-3 text-xs parchment-text z-20">
+            <div className="text-[10px] uppercase tracking-[0.2em] gold-text">Active Players</div>
+            <div className="max-h-56 space-y-1 overflow-auto parchment-text">
               {[...(snapshot?.players || []).map(p => ({...p, kind:'player'})), ...(snapshot?.npcs || []).map(n => ({...n, kind:'npc'}))].map((p) => (
                 <button
                   key={`${p.kind}-${p.id}`}
-                  className={`block w-full truncate rounded px-2 py-1 text-left hover:bg-white/10 ${follow === p.name ? 'bg-white/10' : ''}`}
+                  className={`block w-full truncate rounded px-2 py-1 text-left hover:bg-amber-900/30 ${follow === p.name ? 'bg-amber-900/40' : ''}`}
                   onClick={() => {
                     setFollow(p.name);
                     if (snapshot) {
                       const base = 36;
                       const wsW = snapshot.worldWidth || snapshot.worldSize || 256;
                       const wsH = snapshot.worldHeight || snapshot.worldSize || 256;
-                      const maxZoom = viewport.w / (40 * base); // at least 40 tiles visible
+                      const maxZoom = viewport.w / (30 * base); // at least 30 tiles visible
                       const minZoomW = viewport.w / (wsW * base);
                       const minZoomH = viewport.h / (wsH * base);
                       const minZoom = Math.max(0.1, minZoomW, minZoomH);
@@ -621,7 +768,7 @@ export default function WorldPage() {
             </div>
             {follow && (
               <button
-                className="mt-2 w-full rounded border border-white/20 px-2 py-1 text-xs uppercase tracking-wide text-white hover:border-white/50"
+                className="mt-2 w-full rounded border border-amber-800/50 px-2 py-1 text-xs uppercase tracking-wide parchment-text hover:border-amber-600/70 hover:bg-amber-900/20"
                 onClick={() => setFollow(null)}
               >
                 Stop follow
@@ -630,25 +777,29 @@ export default function WorldPage() {
           </div>
         )}
 
-        {!showIntro && !isMobile && hovered && (
-          <div className="absolute right-4 bottom-4 w-[240px] space-y-1 rounded-xl border border-white/10 bg-black/70 p-3 text-xs text-white">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-400">Player</div>
-            <div className="text-sm font-semibold">{hovered.name}</div>
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-300">
-              <div>Kills: {hovered.stats?.kills ?? 0}</div>
-              <div>Deaths: {hovered.stats?.deaths ?? 0}</div>
-              <div>K/D: {((hovered.stats?.kills ?? 0) / Math.max(1, hovered.stats?.deaths ?? 0)).toFixed(2)}</div>
-              <div>Mined: {hovered.stats?.blocksMined ?? 0}</div>
-              <div>Crafted: {hovered.stats?.itemsCrafted ?? 0}</div>
-              <div>Playtime: {Math.floor((hovered.stats?.playtimeMs ?? 0) / 60000)}m</div>
+        {!showIntro && !isMobile && (() => {
+          const target = hovered || (follow && [...(snapshot?.players || []), ...(snapshot?.npcs || [])].find(p => p.name.toLowerCase() === follow.toLowerCase()));
+          if (!target) return null;
+          return (
+            <div className="fixed right-4 bottom-4 w-[240px] space-y-1 scroll-panel rounded p-3 text-xs parchment-text z-20">
+              <div className="text-[10px] uppercase tracking-[0.2em] gold-text">{follow && target.name.toLowerCase() === follow.toLowerCase() ? 'Following' : 'Player'}</div>
+              <div className="text-sm font-semibold gold-text">{target.name}</div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] parchment-text">
+                <div>Kills: {target.stats?.kills ?? 0}</div>
+                <div>Deaths: {target.stats?.deaths ?? 0}</div>
+                <div>K/D: {((target.stats?.kills ?? 0) / Math.max(1, target.stats?.deaths ?? 0)).toFixed(2)}</div>
+                <div>Mined: {target.stats?.blocksMined ?? 0}</div>
+                <div>Crafted: {target.stats?.itemsCrafted ?? 0}</div>
+                <div>Playtime: {Math.floor((target.stats?.playtimeMs ?? 0) / 60000)}m</div>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {!showIntro && !isMobile && (
-          <div className="absolute left-4 bottom-4 w-[420px] space-y-2 rounded-xl border border-white/10 bg-black/60 p-4 text-sm text-white">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-400">World Chat</div>
-            <div ref={chatRef} className="max-h-56 space-y-1 overflow-y-auto pr-1">
+          <div className="fixed left-4 bottom-4 w-[420px] space-y-2 scroll-panel rounded p-4 text-sm parchment-text z-20">
+            <div className="text-[11px] uppercase tracking-[0.2em] gold-text">World Chat</div>
+            <div ref={chatRef} className="max-h-56 space-y-1 overflow-y-auto pr-1 parchment-text">
               {chat.slice(-12).map((c) => {
                 const isSystem = c.message.startsWith('🟡 ');
                 const msg = isSystem ? c.message.replace(/^🟡\s*/, '') : c.message;
@@ -661,22 +812,22 @@ export default function WorldPage() {
         )}
 
         {(showIntro || isMobile) && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-            <div className="max-w-md rounded-2xl border border-white/10 bg-black/80 p-6 text-sm text-zinc-200 shadow-xl">
-              <div className="text-lg font-semibold text-white">Welcome to the Moltwars Worldviewer</div>
-              <div className="mt-2 text-zinc-300">
+          <div className="absolute inset-0 flex items-center justify-center" style={{background: "radial-gradient(ellipse at center, rgba(20,15,10,0.9) 0%, rgba(5,3,2,0.95) 100%)"}}>
+            <div className="max-w-md scroll-panel rounded p-6 text-sm parchment-text shadow-xl">
+              <div className="text-lg font-semibold gold-text">Welcome to the Moltwars Worldviewer</div>
+              <div className="mt-2 parchment-text">
                 {isMobile
                   ? 'World viewer is PC-only.'
                   : 'Drag to pan. Scroll to zoom. '}
               </div>
-                            <div className="mt-2 text-zinc-300">
+                            <div className="mt-2 parchment-text">
                 {isMobile
                   ? 'World viewer is PC-only.'
-                  : 'Click on players in the player list to follow them. '}
+                  : 'Click on players in the active player list to follow them. '}
               </div>
               {!isMobile && (
                 <button
-                  className="mt-4 rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-wide text-white hover:border-white/50"
+                  className="mt-4 rounded border-2 border-amber-800/60 px-4 py-2 text-xs uppercase tracking-wide gold-text hover:border-amber-600 hover:bg-amber-900/30"
                   onClick={() => {
                     setShowIntro(false);
                     if (snapshot) {
