@@ -145,6 +145,7 @@ export default function WorldPage() {
   const [hovered, setHovered] = useState<any | null>(null);
   const playerImgRef = useRef<HTMLImageElement | null>(null);
   const npcImgRef = useRef<HTMLImageElement | null>(null);
+  const swordImgRef = useRef<HTMLImageElement | null>(null);
   const formatUtc = () => new Date().toLocaleTimeString("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit", hour12: true });
   const [timeUtc, setTimeUtc] = useState<string>("--:--");
   const [bubbles, setBubbles] = useState<Record<string, { message: string; expiresAt: number }>>({});
@@ -266,6 +267,9 @@ export default function WorldPage() {
     const n = new Image();
     n.src = "https://cdn.moltwars.xyz/sprites/molt.png";
     npcImgRef.current = n;
+    const sword = new Image();
+    sword.src = 'https://cdn.moltwars.xyz/sprites/sword.png';
+    swordImgRef.current = sword;
   }, []);
 
   useEffect(() => {
@@ -502,14 +506,15 @@ export default function WorldPage() {
         ctx.drawImage(npcImgRef.current, 0, 0, tileSize, tileSize);
         ctx.filter = 'none';
         
-        // Draw sword swing arc when fighting
-        if (isFighting) {
-          ctx.strokeStyle = '#fff';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          const swingX = dir === 1 ? tileSize : 0;
-          ctx.arc(swingX, tileSize / 2, tileSize * 0.8, -0.5, 0.5);
-          ctx.stroke();
+        // Draw sword when fighting
+        if (isFighting && swordImgRef.current?.complete) {
+          ctx.save();
+          const swingAngle = Math.sin(Date.now() / 50) * 0.5; // swing animation
+          const swordX = dir === 1 ? tileSize * 0.7 : -tileSize * 0.3;
+          ctx.translate(swordX, tileSize * 0.3);
+          ctx.rotate(dir === 1 ? swingAngle - 0.3 : -swingAngle + 0.3 + Math.PI);
+          ctx.drawImage(swordImgRef.current, 0, 0, tileSize * 0.8, tileSize * 0.8);
+          ctx.restore();
         }
         
         ctx.restore();
