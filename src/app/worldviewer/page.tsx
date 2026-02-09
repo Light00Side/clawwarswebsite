@@ -539,7 +539,8 @@ export default function WorldPage() {
       const shake = (isDamaged || fxByActor[n.id]) ? (Math.random() * 2 - 1) * 3 : 0;
       const { sx, sy } = toScreen(n.x, n.y);
       
-      if (npcImgRef.current?.complete) {
+      const npcImg = npcImgRef.current;
+      if (npcImg && npcImg.complete && npcImg.naturalWidth > 0) {
         const dir = (Number((n as any).look ?? 1) === 0) ? -1 : 1;
         ctx.save();
         ctx.translate(sx + (dir === -1 ? tileSize : 0) + shake, sy + shake);
@@ -550,12 +551,12 @@ export default function WorldPage() {
           ctx.filter = 'sepia(1) saturate(5) hue-rotate(-50deg) brightness(1.2)';
         }
         
-        ctx.drawImage(npcImgRef.current, 0, 0, tileSize, tileSize);
+        ctx.drawImage(npcImg, 0, 0, tileSize, tileSize);
         ctx.filter = 'none';
         ctx.restore();
         
         // Draw sword (always visible, swing when fighting) - outside NPC transform
-        if (swordImgRef.current?.complete) {
+        if (swordImgRef.current?.complete && swordImgRef.current.naturalWidth > 0) {
           ctx.save();
           const swingAngle = isFighting ? Math.sin(Date.now() / 30) * 1.2 : Math.sin(Date.now() / 100) * 0.4; // always swinging
           const swordScreenX = sx + (dir === 1 ? tileSize * 0.35 : tileSize * 0.65);
