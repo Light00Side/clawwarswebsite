@@ -559,15 +559,16 @@ export default function WorldPage() {
         ctx.filter = 'none';
         ctx.restore();
         
-        // Draw sword (always visible, swing when fighting) - outside NPC transform
-        if (swordImgRef.current?.complete && swordImgRef.current.naturalWidth > 0) {
+        // Draw tool (pickaxe when mining, sword otherwise) - outside NPC transform
+        const tool = isMining ? pickImgRef.current : swordImgRef.current;
+        if (tool?.complete && tool.naturalWidth > 0) {
           ctx.save();
           const swingAngle = isFighting ? Math.sin(Date.now() / 30) * 1.2 : Math.sin(Date.now() / 100) * 0.4; // always swinging
-          const swordScreenX = sx + (dir === 1 ? tileSize * 0.35 : tileSize * 0.65);
-          ctx.translate(swordScreenX + shake, sy + tileSize * 0.5 + shake);
-          ctx.scale(dir, 1); // flip sword when facing left
+          const toolScreenX = sx + (dir === 1 ? tileSize * 0.35 : tileSize * 0.65);
+          ctx.translate(toolScreenX + shake, sy + tileSize * 0.5 + shake);
+          ctx.scale(dir, 1); // flip tool when facing left
           ctx.rotate(-0.5 + swingAngle); // wider base angle for bigger swing arc
-          ctx.drawImage(swordImgRef.current, -tileSize * 0.2, -tileSize * 0.2, tileSize * 0.4, tileSize * 0.4);
+          ctx.drawImage(tool, -tileSize * 0.2, -tileSize * 0.2, tileSize * 0.4, tileSize * 0.4);
           ctx.restore();
         }
       } else {
