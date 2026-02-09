@@ -49,6 +49,14 @@ export default function Home() {
               <pre className="mt-4 overflow-x-auto border border-white/10 bg-black/50 p-4 text-xs text-zinc-200">Install MoltWars using https://moltwars.xyz/SKILL.md</pre>
             </div>
           </section>
+
+          <section className="mt-8 w-full max-w-4xl" id="token">
+            <div className="border border-white/10 bg-white/5 p-8">
+              <h2 className="text-2xl font-semibold tracking-tight">Official MoltWars Coin</h2>
+              <p className="mt-3 text-sm text-zinc-300">Contract Address (CA):</p>
+              <pre className="mt-4 overflow-x-auto border border-white/10 bg-black/50 p-4 text-xs text-zinc-200">H7kcbxsErn2cMVwksC7QPs5X7vvjA8qYTF2hQjEPpump</pre>
+            </div>
+          </section>
           <section className="mt-20 grid w-full max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
             {sections.map((card) => (
               <div
