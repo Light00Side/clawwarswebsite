@@ -59,6 +59,7 @@ const medievalStyles = `
 
 
 import { useEffect, useRef, useState } from 'react';
+import pako from 'pako';
 
 const WORLD_URL = 'https://server.moltwars.xyz/world';
 const WORLD_WS = 'wss://server.moltwars.xyz/ws/world';
@@ -108,6 +109,13 @@ const adjustColor = (hex: string, amt: number): string => {
   return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
 };
 
+const base64ToBytes = (b64: string) => {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+};
+
 export default function WorldPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const minimapRef = useRef<HTMLCanvasElement | null>(null);
@@ -147,11 +155,14 @@ export default function WorldPage() {
   const playerImgRef = useRef<HTMLImageElement | null>(null);
   const npcImgRef = useRef<HTMLImageElement | null>(null);
   const swordImgRef = useRef<HTMLImageElement | null>(null);
+  const pickImgRef = useRef<HTMLImageElement | null>(null);
+  const boarImgRef = useRef<HTMLImageElement | null>(null);
   const formatUtc = () => new Date().toLocaleTimeString("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit", hour12: true });
   const [timeUtc, setTimeUtc] = useState<string>("--:--");
   const [bubbles, setBubbles] = useState<Record<string, { message: string; expiresAt: number }>>({});
   const [effects, setEffects] = useState<Array<any>>([]);
   const [fxByActor, setFxByActor] = useState<Record<string, number>>({});
+  const [miningByActor, setMiningByActor] = useState<Record<string, number>>({});
   const surfaceRef = useRef<number | null>(null);
 
   // Inject medieval styles
@@ -178,7 +189,12 @@ export default function WorldPage() {
     ws.onmessage = (evt) => {
       if (!mounted) return;
       try {
-        const data = JSON.parse(evt.data);
+        let data: any = JSON.parse(evt.data);
+        if (data?.compressed === 'deflate' && data?.data) {
+          const bytes = base64ToBytes(data.data);
+          const json = pako.inflateRaw(bytes, { to: 'string' });
+          data = JSON.parse(json);
+        }
         if (data?.ok) {
           setSnapshot(data);
           if (Array.isArray(data.chat)) setChat(data.chat);
@@ -189,6 +205,13 @@ export default function WorldPage() {
             ...b,
             [data.npcId]: { message: data.message, expiresAt: Date.now() + ttl },
           }));
+        }
+        if (data?.type === 'fx') {
+          setEffects((fx) => [...fx, { ...data, expiresAt: Date.now() + 800 }]);
+          if (data.actorId) setFxByActor((m) => ({ ...m, [data.actorId]: Date.now() + 400 }));
+        }
+        if (data?.type === 'mineState') {
+          setMiningByActor((m) => ({ ...m, [data.actorId]: data.active ? Date.now() + 600 : 0 }));
         }
       } catch (e) {
         console.warn('[world] bad message', e);
@@ -275,6 +298,12 @@ export default function WorldPage() {
     const sword = new Image();
     sword.src = 'https://cdn.moltwars.xyz/sprites/sword.png';
     swordImgRef.current = sword;
+    const pick = new Image();
+    pick.src = 'https://cdn.moltwars.xyz/sprites/pickaxe.png';
+    pickImgRef.current = pick;
+    const boar = new Image();
+    boar.src = 'https://cdn.moltwars.xyz/sprites/boar.png';
+    boarImgRef.current = boar;
   }, []);
 
   useEffect(() => {
@@ -299,7 +328,7 @@ export default function WorldPage() {
     const viewH = Math.max(1, Math.min(worldHeight, Math.ceil(viewport.h / tileSize)));
     const initial = { x: Math.floor(worldSize / 2 - viewW / 2), y: Math.floor(worldHeight * 0.22 - viewH / 2) };
     setPan(clampPan(initial, tileSize));
-  }, [snapshot, pan, zoom, viewport, showIntro]);
+  }, [snapshot, zoom, viewport, showIntro]);
 
   // follow target
   useEffect(() => {
@@ -378,8 +407,10 @@ export default function WorldPage() {
 
     let panBase = pan || { x: 0, y: 0 };
 
-    const startX = Math.floor(Math.max(0, Math.min(worldSize - viewWActual, snapshot.x ?? panBase?.x ?? 0)));
-    const startY = Math.floor(Math.max(0, Math.min((worldHeight || worldSize) - viewHActual, snapshot.y ?? panBase?.y ?? 0)));
+    const baseX = follow ? (panBase?.x ?? 0) : (snapshot.x ?? panBase?.x ?? 0);
+    const baseY = follow ? (panBase?.y ?? 0) : (snapshot.y ?? panBase?.y ?? 0);
+    const startX = Math.floor(Math.max(0, Math.min(worldSize - viewWActual, baseX)));
+    const startY = Math.floor(Math.max(0, Math.min((worldHeight || worldSize) - viewHActual, baseY)));
 
     canvas.width = viewport.w;
     canvas.height = viewport.h;
@@ -482,18 +513,28 @@ export default function WorldPage() {
       ctx.strokeRect(sx + 0.5, sy + 0.5, tileSize - 1, tileSize - 1);
     };
 
-    animals.forEach((a) => {
+    animals.forEach((a: any) => {
       const { sx, sy } = toScreen(a.x, a.y);
-      ctx.fillStyle = '#F59E0B';
-      ctx.fillRect(sx, sy, tileSize, tileSize);
-      ctx.strokeStyle = '#ffffff66';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(sx + 0.5, sy + 0.5, tileSize - 1, tileSize - 1);
+      if (boarImgRef.current?.complete) {
+        const dir = (a.vx || 0) < 0 ? -1 : 1;
+        ctx.save();
+        ctx.translate(sx + (dir === -1 ? tileSize*3 : 0), sy);
+        ctx.scale(dir, 1);
+        ctx.drawImage(boarImgRef.current, 0, 0, tileSize*3, tileSize*3);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = '#F59E0B';
+        ctx.fillRect(sx, sy, tileSize, tileSize);
+        ctx.strokeStyle = '#ffffff66';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(sx + 0.5, sy + 0.5, tileSize - 1, tileSize - 1);
+      }
     });
     npcs.forEach((n: any) => {
       const now = Date.now();
       const isDamaged = n.damagedUntil && now < n.damagedUntil;
       const isFighting = n.fightingUntil && now < n.fightingUntil;
+      const isMining = (miningByActor[n.id] || 0) > Date.now();
       const shake = (isDamaged || fxByActor[n.id]) ? (Math.random() * 2 - 1) * 3 : 0;
       const { sx, sy } = toScreen(n.x, n.y);
       
@@ -541,11 +582,12 @@ export default function WorldPage() {
       const now = Date.now();
       const isDamaged = p.damagedUntil && now < p.damagedUntil;
       const isFighting = p.fightingUntil && now < p.fightingUntil;
+      const isMining = (miningByActor[p.id] || 0) > Date.now();
       const { sx, sy } = toScreen(p.x, p.y);
       const dir = (Number(p.look ?? 1) === 0) ? -1 : 1;
       if (playerImgRef.current?.complete) {
         ctx.save();
-        ctx.translate(sx + (dir === -1 ? tileSize : 0), sy);
+        ctx.translate(sx + (dir === -1 ? tileSize*3 : 0), sy);
         ctx.scale(dir, 1);
         if (isDamaged) {
           ctx.filter = 'sepia(1) saturate(5) hue-rotate(-50deg) brightness(1.2)';
@@ -557,15 +599,16 @@ export default function WorldPage() {
         const color = isDamaged ? '#ff4444' : '#F472B6';
         drawEntity(Math.floor(p.x), Math.floor(p.y), color, p.look ?? 1);
       }
-      // sword (always visible)
-      if (swordImgRef.current?.complete) {
+            // held tool (pickaxe when mining, sword otherwise)
+      const tool = isMining ? pickImgRef.current : swordImgRef.current;
+      if (tool?.complete) {
         ctx.save();
         const swingAngle = isFighting ? Math.sin(Date.now() / 30) * 1.2 : Math.sin(Date.now() / 100) * 0.4;
-        const swordScreenX = sx + (dir === 1 ? tileSize * 0.35 : tileSize * 0.65);
-        ctx.translate(swordScreenX, sy + tileSize * 0.5);
+        const toolX = sx + (dir === 1 ? tileSize * 0.35 : tileSize * 0.65);
+        ctx.translate(toolX, sy + tileSize * 0.5);
         ctx.scale(dir, 1);
         ctx.rotate(-0.5 + swingAngle);
-        ctx.drawImage(swordImgRef.current, -tileSize * 0.2, -tileSize * 0.2, tileSize * 0.4, tileSize * 0.4);
+        ctx.drawImage(tool, -tileSize * 0.2, -tileSize * 0.2, tileSize * 0.4, tileSize * 0.4);
         ctx.restore();
       }
       // health bar
@@ -610,15 +653,36 @@ export default function WorldPage() {
         ctx.stroke();
       } else if (e.kind === 'explode') {
         const { sx, sy } = toScreen(e.x, e.y);
-        ctx.fillStyle = 'rgba(255,120,0,0.6)';
+        const cx = sx + tileSize/2;
+        const cy = sy + tileSize/2;
+        // big fireball
+        ctx.fillStyle = 'rgba(255,90,0,0.8)';
         ctx.beginPath();
-        ctx.arc(sx + tileSize/2, sy + tileSize/2, tileSize, 0, Math.PI*2);
+        ctx.arc(cx, cy, tileSize*1.6, 0, Math.PI*2);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-        ctx.lineWidth = 2;
+        // inner core
+        ctx.fillStyle = 'rgba(255,220,120,0.9)';
         ctx.beginPath();
-        ctx.arc(sx + tileSize/2, sy + tileSize/2, tileSize*0.6, 0, Math.PI*2);
+        ctx.arc(cx, cy, tileSize*0.8, 0, Math.PI*2);
+        ctx.fill();
+        // shockwave ring
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, tileSize*2.2, 0, Math.PI*2);
         ctx.stroke();
+        // debris sparks
+        ctx.strokeStyle = 'rgba(255,200,0,0.9)';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+          const ang = (Math.PI * 2 * i) / 8;
+          const r1 = tileSize*0.5;
+          const r2 = tileSize*2.6;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(ang)*r1, cy + Math.sin(ang)*r1);
+          ctx.lineTo(cx + Math.cos(ang)*r2, cy + Math.sin(ang)*r2);
+          ctx.stroke();
+        }
       } else if (e.kind === 'eat') {
         const { sx, sy } = toScreen(e.x, e.y);
         ctx.strokeStyle = '#22c55e';
@@ -720,7 +784,7 @@ export default function WorldPage() {
     const minZoomW = viewport.w / (wsW * baseTile);
     const minZoomH = viewport.h / (wsH * baseTile);
     const minZoom = Math.max(0.1, minZoomW, minZoomH);
-    const minTiles = follow ? 15 : 36;
+    const minTiles = follow ? 120 : 25;
     const maxZoom = viewport.w / (minTiles * baseTile); // keep at least minTiles visible
     const next = Math.min(maxZoom, Math.max(minZoom, zoomTarget + delta));
     // zoom towards cursor
@@ -817,7 +881,7 @@ export default function WorldPage() {
                       const base = 36;
                       const wsW = snapshot.worldWidth || snapshot.worldSize || 256;
                       const wsH = snapshot.worldHeight || snapshot.worldSize || 256;
-                      const maxZoom = viewport.w / (15 * base); // at least 15 tiles visible
+                      const maxZoom = viewport.w / (120 * base); // at least 120 tiles visible
                       const minZoomW = viewport.w / (wsW * base);
                       const minZoomH = viewport.h / (wsH * base);
                       const minZoom = Math.max(0.1, minZoomW, minZoomH);
