@@ -539,7 +539,7 @@ export default function WorldPage() {
       const now = Date.now();
       const isDamaged = n.damagedUntil && now < n.damagedUntil;
       const isFighting = n.fightingUntil && now < n.fightingUntil;
-      const isMining = (miningByActor[n.id] || 0) > Date.now();
+      const isMining = (n.miningUntil && Date.now() < n.miningUntil) || (miningByActor[n.id] || 0) > Date.now();
       const shake = (isDamaged || fxByActor[n.id]) ? (Math.random() * 2 - 1) * 3 : 0;
       const { sx, sy } = toScreen(n.x, n.y);
       
@@ -589,7 +589,7 @@ export default function WorldPage() {
       const now = Date.now();
       const isDamaged = p.damagedUntil && now < p.damagedUntil;
       const isFighting = p.fightingUntil && now < p.fightingUntil;
-      const isMining = (miningByActor[p.id] || 0) > Date.now();
+      const isMining = (p.miningUntil && Date.now() < p.miningUntil) || (miningByActor[p.id] || 0) > Date.now();
       const { sx, sy } = toScreen(p.x, p.y);
       const dir = (Number(p.look ?? 1) === 0) ? -1 : 1;
       if (playerImgRef.current?.complete) {
