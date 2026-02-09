@@ -182,7 +182,10 @@ export default function WorldPage() {
     if (followParam) {
       setFollow(followParam);
       setShowIntro(false); // skip intro when auto-following
-      setZoomTarget(2); // zoom in close
+      const baseTile = 36;
+      const minTiles = 30;
+      const maxZoom = viewport.w / (minTiles * baseTile);
+      setZoomTarget(maxZoom); // zoom all the way in
     }
     console.log('[world] connecting', WORLD_WS);
     const ws = new WebSocket(WORLD_WS);
@@ -787,7 +790,7 @@ export default function WorldPage() {
     const minZoomW = viewport.w / (wsW * baseTile);
     const minZoomH = viewport.h / (wsH * baseTile);
     const minZoom = Math.max(0.1, minZoomW, minZoomH);
-    const minTiles = follow ? 120 : 25;
+    const minTiles = follow ? 30 : 25;
     const maxZoom = viewport.w / (minTiles * baseTile); // keep at least minTiles visible
     const next = Math.min(maxZoom, Math.max(minZoom, zoomTarget + delta));
     // zoom towards cursor
@@ -884,7 +887,7 @@ export default function WorldPage() {
                       const base = 36;
                       const wsW = snapshot.worldWidth || snapshot.worldSize || 256;
                       const wsH = snapshot.worldHeight || snapshot.worldSize || 256;
-                      const maxZoom = viewport.w / (120 * base); // at least 120 tiles visible
+                      const maxZoom = viewport.w / (30 * base); // at least 30 tiles visible
                       const minZoomW = viewport.w / (wsW * base);
                       const minZoomH = viewport.h / (wsH * base);
                       const minZoom = Math.max(0.1, minZoomW, minZoomH);
