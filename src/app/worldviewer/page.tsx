@@ -114,7 +114,6 @@ export default function WorldPage() {
   const lastMiniRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
-  const followTargetRef = useRef<{ x: number; y: number } | null>(null);
   const mouseRef = useRef<{ x: number; y: number } | null>(null);
   const mouseClientRef = useRef<{ x: number; y: number } | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -319,7 +318,7 @@ export default function WorldPage() {
     const target = { x: Math.floor(focus.x - viewW / 2), y: Math.floor(focus.y - viewH / 2) };
     const clamped = clampPan(target, tileSize);
     if (!samePan(pan, clamped)) setPan(clamped);
-  }, [follow, snapshot, viewport, zoom, showIntro, pan]);
+  }, [follow, snapshot, viewport, zoom, showIntro]);
 
   useEffect(() => {
     if (!follow || !snapshot) return;
@@ -361,8 +360,8 @@ export default function WorldPage() {
 
     const viewW = Math.max(1, Math.min(worldSize, Math.ceil(viewport.w / tileSize)));
     const viewH = Math.max(1, Math.min(worldHeight || worldSize, Math.ceil(viewport.h / tileSize)));
-    const viewWActual = snapshot.w || viewW;
-    const viewHActual = snapshot.h || viewH;
+    const viewWActual = viewW;
+    const viewHActual = viewH;
     const is2d = Array.isArray(tiles) && Array.isArray(tiles[0]);
 
     // clamp handled at render time
@@ -382,8 +381,8 @@ export default function WorldPage() {
     const startX = Math.floor(Math.max(0, Math.min(worldSize - viewWActual, snapshot.x ?? panBase?.x ?? 0)));
     const startY = Math.floor(Math.max(0, Math.min((worldHeight || worldSize) - viewHActual, snapshot.y ?? panBase?.y ?? 0)));
 
-    canvas.width = viewWActual * tileSize;
-    canvas.height = viewHActual * tileSize;
+    canvas.width = viewport.w;
+    canvas.height = viewport.h;
 
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -685,7 +684,7 @@ export default function WorldPage() {
       ctx.fillText(text, sx - w / 2 + padding, sy - 8);
     }
 
-    // hover detection (players only)
+    // hover detection (players/npcs)
     if (mouseRef.current) {
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
@@ -693,7 +692,9 @@ export default function WorldPage() {
       const wy = startY + Math.floor(my / tileSize);
       const foundPlayer = players.find((p) => Math.floor(p.x) === wx && Math.floor(p.y) === wy);
       const foundNpc = npcs.find((n) => Math.floor(n.x) === wx && Math.floor(n.y) === wy);
-      setHovered(foundPlayer ? { ...foundPlayer } : foundNpc ? { ...foundNpc } : null);
+      const nextHover = foundPlayer ? { ...foundPlayer } : foundNpc ? { ...foundNpc } : null;
+      if (nextHover?.id !== hovered?.id) setHovered(nextHover);
+      if (!nextHover && hovered) setHovered(null);
     }
   }, [snapshot, pan, zoom, viewport, bubbles]);
 
