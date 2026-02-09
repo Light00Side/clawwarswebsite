@@ -114,7 +114,9 @@ export default function WorldPage() {
   const lastMiniRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const followTargetRef = useRef<{ x: number; y: number } | null>(null);
   const mouseRef = useRef<{ x: number; y: number } | null>(null);
+  const mouseClientRef = useRef<{ x: number; y: number } | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const [snapshot, setSnapshot] = useState<WorldSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -240,15 +242,15 @@ export default function WorldPage() {
     const tick = () => {
       setZoom((z) => {
         if (zoomTarget === null) return z;
-        const nz = z + (zoomTarget - z) * 0.35;
-        if (Math.abs(nz - zoomTarget) < 0.002) return zoomTarget;
+        const nz = z + (zoomTarget - z) * 0.12;
+        if (Math.abs(nz - zoomTarget) < 0.001) return zoomTarget;
         return nz;
       });
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [zoomTarget]);
+  }, [zoomTarget, pan]);
 
   useEffect(() => {
     const m = window.matchMedia('(pointer: coarse)');
@@ -317,7 +319,7 @@ export default function WorldPage() {
     const target = { x: Math.floor(focus.x - viewW / 2), y: Math.floor(focus.y - viewH / 2) };
     const clamped = clampPan(target, tileSize);
     if (!samePan(pan, clamped)) setPan(clamped);
-  }, [follow, snapshot, viewport, zoom, showIntro]);
+  }, [follow, snapshot, viewport, zoom, showIntro, pan]);
 
   useEffect(() => {
     if (!follow || !snapshot) return;
@@ -482,7 +484,7 @@ export default function WorldPage() {
     };
 
     animals.forEach((a) => {
-      const { sx, sy } = toScreen(Math.floor(a.x), Math.floor(a.y));
+      const { sx, sy } = toScreen(a.x, a.y);
       ctx.fillStyle = '#F59E0B';
       ctx.fillRect(sx, sy, tileSize, tileSize);
       ctx.strokeStyle = '#ffffff66';
@@ -494,7 +496,7 @@ export default function WorldPage() {
       const isDamaged = n.damagedUntil && now < n.damagedUntil;
       const isFighting = n.fightingUntil && now < n.fightingUntil;
       const shake = (isDamaged || fxByActor[n.id]) ? (Math.random() * 2 - 1) * 3 : 0;
-      const { sx, sy } = toScreen(Math.floor(n.x), Math.floor(n.y));
+      const { sx, sy } = toScreen(n.x, n.y);
       
       if (npcImgRef.current?.complete) {
         const dir = (Number((n as any).look ?? 1) === 0) ? -1 : 1;
@@ -536,17 +538,44 @@ export default function WorldPage() {
         ctx.fillRect(sx, sy - 4, tileSize * hpRatio, 3);
       }
     });
-    players.forEach((p) => {
+    players.forEach((p: any) => {
+      const now = Date.now();
+      const isDamaged = p.damagedUntil && now < p.damagedUntil;
+      const isFighting = p.fightingUntil && now < p.fightingUntil;
+      const { sx, sy } = toScreen(p.x, p.y);
+      const dir = (Number(p.look ?? 1) === 0) ? -1 : 1;
       if (playerImgRef.current?.complete) {
-        const { sx, sy } = toScreen(Math.floor(p.x), Math.floor(p.y));
-        const dir = (Number(p.look ?? 1) === 0) ? -1 : 1;
         ctx.save();
         ctx.translate(sx + (dir === -1 ? tileSize : 0), sy);
         ctx.scale(dir, 1);
+        if (isDamaged) {
+          ctx.filter = 'sepia(1) saturate(5) hue-rotate(-50deg) brightness(1.2)';
+        }
         ctx.drawImage(playerImgRef.current, 0, 0, tileSize, tileSize);
+        ctx.filter = 'none';
         ctx.restore();
       } else {
-        drawEntity(Math.floor(p.x), Math.floor(p.y), '#F472B6', p.look ?? 1);
+        const color = isDamaged ? '#ff4444' : '#F472B6';
+        drawEntity(Math.floor(p.x), Math.floor(p.y), color, p.look ?? 1);
+      }
+      // sword (always visible)
+      if (swordImgRef.current?.complete) {
+        ctx.save();
+        const swingAngle = isFighting ? Math.sin(Date.now() / 30) * 1.2 : Math.sin(Date.now() / 100) * 0.4;
+        const swordScreenX = sx + (dir === 1 ? tileSize * 0.35 : tileSize * 0.65);
+        ctx.translate(swordScreenX, sy + tileSize * 0.5);
+        ctx.scale(dir, 1);
+        ctx.rotate(-0.5 + swingAngle);
+        ctx.drawImage(swordImgRef.current, -tileSize * 0.2, -tileSize * 0.2, tileSize * 0.4, tileSize * 0.4);
+        ctx.restore();
+      }
+      // health bar
+      if (p.hp < (p.maxHp || 100)) {
+        const hpRatio = p.hp / (p.maxHp || 100);
+        ctx.fillStyle = '#333';
+        ctx.fillRect(sx, sy - 4, tileSize, 3);
+        ctx.fillStyle = hpRatio > 0.5 ? '#4ade80' : hpRatio > 0.25 ? '#facc15' : '#ef4444';
+        ctx.fillRect(sx, sy - 4, tileSize * hpRatio, 3);
       }
     });
 
@@ -579,6 +608,17 @@ export default function WorldPage() {
         ctx.beginPath();
         ctx.moveTo(a.sx + tileSize/2, a.sy + tileSize/2);
         ctx.lineTo(b.sx + tileSize/2, b.sy + tileSize/2);
+        ctx.stroke();
+      } else if (e.kind === 'explode') {
+        const { sx, sy } = toScreen(e.x, e.y);
+        ctx.fillStyle = 'rgba(255,120,0,0.6)';
+        ctx.beginPath();
+        ctx.arc(sx + tileSize/2, sy + tileSize/2, tileSize, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(sx + tileSize/2, sy + tileSize/2, tileSize*0.6, 0, Math.PI*2);
         ctx.stroke();
       } else if (e.kind === 'eat') {
         const { sx, sy } = toScreen(e.x, e.y);
@@ -632,7 +672,7 @@ export default function WorldPage() {
     for (const n of npcs) {
       const b = bubbles[n.id];
       if (!b) continue;
-      const { sx, sy } = toScreen(Math.floor(n.x), Math.floor(n.y));
+      const { sx, sy } = toScreen(n.x, n.y);
       if (sx < 0 || sy < 0 || sx >= canvas.width || sy >= canvas.height) continue;
       ctx.font = '12px sans-serif';
       const text = b.message;
@@ -679,9 +719,9 @@ export default function WorldPage() {
     const minZoomW = viewport.w / (wsW * baseTile);
     const minZoomH = viewport.h / (wsH * baseTile);
     const minZoom = Math.max(0.1, minZoomW, minZoomH);
-    const minTiles = follow ? 30 : 75;
+    const minTiles = follow ? 15 : 36;
     const maxZoom = viewport.w / (minTiles * baseTile); // keep at least minTiles visible
-    const next = Math.min(maxZoom, Math.max(minZoom, +(zoomTarget + delta).toFixed(2)));
+    const next = Math.min(maxZoom, Math.max(minZoom, zoomTarget + delta));
     // zoom towards cursor
     const mouse = mouseRef.current;
     if (mouse && pan) {
@@ -697,12 +737,14 @@ export default function WorldPage() {
   const handleMouseDown = (e: React.MouseEvent) => {
     if (showIntro) return;
     setIsDragging(true);
+    mouseClientRef.current = { x: e.clientX, y: e.clientY };
     dragRef.current = { x: e.clientX, y: e.clientY, panX: pan?.x || 0, panY: pan?.y || 0 };
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    mouseClientRef.current = { x: e.clientX, y: e.clientY };
     if (showIntro || !dragRef.current) return;
     const baseTile = showIntro ? 16 : 36;
     const tileSize = baseTile * zoom;
@@ -713,6 +755,23 @@ export default function WorldPage() {
   };
 
   const stopDrag = () => {
+    // click-to-follow if minimal drag
+    const drag = dragRef.current;
+    if (drag && snapshot && mouseRef.current && mouseClientRef.current) {
+      const dxPx = Math.abs(mouseClientRef.current.x - drag.x);
+      const dyPx = Math.abs(mouseClientRef.current.y - drag.y);
+      if (dxPx < 5 && dyPx < 5) {
+        const baseTile = showIntro ? 16 : 36;
+        const tileSize = baseTile * zoom;
+        const wx = Math.floor((pan?.x || 0) + mouseRef.current.x / tileSize);
+        const wy = Math.floor((pan?.y || 0) + mouseRef.current.y / tileSize);
+        const all = [...(snapshot.players || []), ...(snapshot.npcs || [])];
+        const found = all.find((p) => Math.floor(p.x) === wx && Math.floor(p.y) === wy);
+        if (found) {
+          setFollow(found.name);
+        }
+      }
+    }
     setIsDragging(false);
     dragRef.current = null;
   };
@@ -757,7 +816,7 @@ export default function WorldPage() {
                       const base = 36;
                       const wsW = snapshot.worldWidth || snapshot.worldSize || 256;
                       const wsH = snapshot.worldHeight || snapshot.worldSize || 256;
-                      const maxZoom = viewport.w / (30 * base); // at least 30 tiles visible
+                      const maxZoom = viewport.w / (15 * base); // at least 15 tiles visible
                       const minZoomW = viewport.w / (wsW * base);
                       const minZoomH = viewport.h / (wsH * base);
                       const minZoom = Math.max(0.1, minZoomW, minZoomH);
@@ -810,8 +869,8 @@ export default function WorldPage() {
             <div className="text-[11px] uppercase tracking-[0.2em] gold-text">World Chat</div>
             <div ref={chatRef} className="max-h-56 space-y-1 overflow-y-auto pr-1 parchment-text">
               {chat.slice(-12).map((c) => {
-                const isSystem = c.message.startsWith('🟡 ');
-                const msg = isSystem ? c.message.replace(/^🟡\s*/, '') : c.message;
+                const isSystem = c.message.startsWith('🟡 ') || c.message.startsWith('🟢 ');
+                const msg = isSystem ? c.message.replace(/^[\u{1F7E1}\u{1F7E2}]\s*/u, '') : c.message;
                 return (
                   <div key={c.ts + msg} className={isSystem ? 'truncate text-yellow-400' : 'truncate'}>{msg}</div>
                 );
