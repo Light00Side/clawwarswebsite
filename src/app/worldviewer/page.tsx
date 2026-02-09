@@ -706,20 +706,20 @@ export default function WorldPage() {
       const maxW = 900;
       const maxH = 600;
       const scale = Math.min(maxW / worldSize, maxH / (worldHeight || worldSize)) * 0.5;
-      const step = 60;
+      const step = 120;
       mini.width = Math.floor(worldSize * scale);
       mini.height = Math.floor((worldHeight || worldSize) * scale);
       const mctx = mini.getContext('2d');
       if (mctx) {
         mctx.imageSmoothingEnabled = false;
         mctx.clearRect(0, 0, mini.width, mini.height);
-        for (let y = 0; y < (worldHeight || worldSize); y++) {
-          for (let x = 0; x < worldSize; x++) {
+        for (let y = 0; y < (worldHeight || worldSize); y += step) {
+          for (let x = 0; x < worldSize; x += step) {
             const t = is2d ? (tiles as number[][])?.[y]?.[x] : (tiles as number[])[y * worldSize + x];
             let c = TILE_COLORS[t ?? 0] || '#000';
             if ((t ?? 0) === 0 && y > surfaceY) c = '#0b0f14';
             mctx.fillStyle = c;
-            mctx.fillRect(x * scale, y * scale, Math.ceil(scale), Math.ceil(scale));
+            mctx.fillRect(x * scale, y * scale, Math.max(1, Math.ceil(scale * step)), Math.max(1, Math.ceil(scale * step)));
           }
         }
         const vx = startX * scale;
