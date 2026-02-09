@@ -560,7 +560,7 @@ export default function WorldPage() {
         ctx.restore();
         
         // Draw tool (pickaxe when mining, sword otherwise) - outside NPC transform
-        const tool = isMining ? pickImgRef.current : swordImgRef.current;
+        const tool = (n.activeTool === 'pick' || isMining) ? pickImgRef.current : swordImgRef.current;
         if (tool?.complete && tool.naturalWidth > 0) {
           ctx.save();
           const swingAngle = isFighting ? Math.sin(Date.now() / 30) * 1.2 : Math.sin(Date.now() / 100) * 0.4; // always swinging
