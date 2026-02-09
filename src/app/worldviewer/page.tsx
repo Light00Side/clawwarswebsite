@@ -722,9 +722,21 @@ export default function WorldPage() {
             mctx.fillRect(x * scale, y * scale, Math.ceil(scale), Math.ceil(scale));
           }
         }
-        mctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        const vx = startX * scale;
+        const vy = startY * scale;
+        const vw = viewWActual * scale;
+        const vh = viewHActual * scale;
+
+        // darken outside viewport (strong)
+        mctx.fillStyle = 'rgba(0,0,0,0.7)';
+        mctx.fillRect(0, 0, mini.width, vy);
+        mctx.fillRect(0, vy + vh, mini.width, mini.height - (vy + vh));
+        mctx.fillRect(0, vy, vx, vh);
+        mctx.fillRect(vx + vw, vy, mini.width - (vx + vw), vh);
+
+        mctx.strokeStyle = 'rgba(255,255,255,0.9)';
         mctx.lineWidth = 1;
-        mctx.strokeRect(startX * scale, startY * scale, viewWActual * scale, viewHActual * scale);
+        mctx.strokeRect(vx, vy, vw, vh);
         mctx.fillStyle = '#f472b6';
         mctx.fillRect(focus.x * scale - 1, focus.y * scale - 1, 3, 3);
       }
