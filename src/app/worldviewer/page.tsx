@@ -80,6 +80,7 @@ type WorldSnapshot = {
   animals: Array<{ id: string; type: string; x: number; y: number }>;
   chat?: Array<{ ts: number; message: string }>;
   worldSeed?: string;
+  worldSeedInt?: number;
 };
 
 const SKY_TILE = 6;
@@ -850,7 +851,7 @@ export default function WorldPage() {
       {error && <div className="p-4 text-sm text-red-400">{error}</div>}
       {!snapshot && !error && <div className="p-4 text-sm text-zinc-400">Loading…</div>}
       <div className="h-screen w-screen overflow-hidden stone-bg relative">
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 scroll-panel rounded px-4 py-2 text-xs parchment-text z-20">{timeUtc} {snapshot?.worldSeed ? `· seed ${snapshot.worldSeed}` : ''}</div>
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 scroll-panel rounded px-4 py-2 text-xs parchment-text z-20">{timeUtc} {typeof snapshot?.worldSeedInt === 'number' ? `· seed ${snapshot.worldSeedInt}` : snapshot?.worldSeed ? `· seed ${snapshot.worldSeed}` : ''}</div>
                 <div
           ref={containerRef}
           className="stone-bg w-full h-full absolute inset-0"
