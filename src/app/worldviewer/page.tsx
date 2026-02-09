@@ -515,12 +515,13 @@ export default function WorldPage() {
 
     animals.forEach((a: any) => {
       const { sx, sy } = toScreen(a.x, a.y);
-      if (boarImgRef.current?.complete) {
+      const boarImg = boarImgRef.current;
+      if (boarImg && boarImg.complete && boarImg.naturalWidth > 0) {
         const dir = (a.vx || 0) < 0 ? -1 : 1;
         ctx.save();
         ctx.translate(sx + (dir === -1 ? tileSize*3 : 0), sy);
         ctx.scale(dir, 1);
-        ctx.drawImage(boarImgRef.current, 0, 0, tileSize*3, tileSize*3);
+        ctx.drawImage(boarImg, 0, 0, tileSize*3, tileSize*3);
         ctx.restore();
       } else {
         ctx.fillStyle = '#F59E0B';
