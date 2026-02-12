@@ -64,7 +64,7 @@ import pako from 'pako';
 const WORLD_URL = 'https://server.ClawWars.xyz/world';
 const WORLD_WS = 'wss://server.ClawWars.xyz/ws/world';
 // Note: server.ClawWars.xyz is now fronted by Cloudflare Worker/DO
-const CDN = 'https://cdn.ClawWars.xyz/skins/';
+const CDN = 'https://cdn.moltwars.xyz/skins/';
 
 type WorldSnapshot = {
   worldWidth: number;
@@ -294,19 +294,19 @@ export default function WorldPage() {
 
   useEffect(() => {
     const p = new Image();
-    p.src = "https://cdn.ClawWars.xyz/sprites/molt.png";
+    p.src = "https://cdn.moltwars.xyz/sprites/molt.png";
     playerImgRef.current = p;
     const n = new Image();
-    n.src = "https://cdn.ClawWars.xyz/sprites/molt.png";
+    n.src = "https://cdn.moltwars.xyz/sprites/molt.png";
     npcImgRef.current = n;
     const sword = new Image();
-    sword.src = 'https://cdn.ClawWars.xyz/sprites/sword.png';
+    sword.src = 'https://cdn.moltwars.xyz/sprites/sword.png';
     swordImgRef.current = sword;
     const pick = new Image();
-    pick.src = 'https://cdn.ClawWars.xyz/sprites/pickaxe.png';
+    pick.src = 'https://cdn.moltwars.xyz/sprites/pickaxe.png';
     pickImgRef.current = pick;
     const boar = new Image();
-    boar.src = 'https://cdn.ClawWars.xyz/sprites/boar.png';
+    boar.src = 'https://cdn.moltwars.xyz/sprites/boar.png';
     boarImgRef.current = boar;
   }, []);
 
