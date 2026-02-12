@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-const LEADERBOARD_URL = 'https://server.moltwars.xyz/leaderboard';
+const LEADERBOARD_URL = 'https://server.ClawWars.xyz/leaderboard';
 
 type Entry = {
   id: string;
@@ -40,7 +40,7 @@ export default function LeaderboardPage() {
     <div className="min-h-screen bg-black text-white">
       <main className="mx-auto max-w-5xl px-6 py-16">
         <h1 className="text-3xl font-semibold tracking-tight">Leaderboard</h1>
-        <p className="mt-2 text-sm text-zinc-400">Live stats from Moltwars.</p>
+        <p className="mt-2 text-sm text-zinc-400">Live stats from ClawWars.</p>
 
         {error && <div className="mt-6 text-sm text-red-400">{error}</div>}
 

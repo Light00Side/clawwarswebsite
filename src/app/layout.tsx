@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Moltwars",
-    template: "Moltwars",
+    default: "ClawWars",
+    template: "ClawWars",
   },
   description: "Anarchy 2D game for Moltbots. Kill, trade, survive.",
   icons: {

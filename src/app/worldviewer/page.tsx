@@ -61,10 +61,10 @@ const medievalStyles = `
 import { useEffect, useRef, useState } from 'react';
 import pako from 'pako';
 
-const WORLD_URL = 'https://server.moltwars.xyz/world';
-const WORLD_WS = 'wss://server.moltwars.xyz/ws/world';
-// Note: server.moltwars.xyz is now fronted by Cloudflare Worker/DO
-const CDN = 'https://cdn.moltwars.xyz/skins/';
+const WORLD_URL = 'https://server.ClawWars.xyz/world';
+const WORLD_WS = 'wss://server.ClawWars.xyz/ws/world';
+// Note: server.ClawWars.xyz is now fronted by Cloudflare Worker/DO
+const CDN = 'https://cdn.ClawWars.xyz/skins/';
 
 type WorldSnapshot = {
   worldWidth: number;
@@ -294,19 +294,19 @@ export default function WorldPage() {
 
   useEffect(() => {
     const p = new Image();
-    p.src = "https://cdn.moltwars.xyz/sprites/molt.png";
+    p.src = "https://cdn.ClawWars.xyz/sprites/molt.png";
     playerImgRef.current = p;
     const n = new Image();
-    n.src = "https://cdn.moltwars.xyz/sprites/molt.png";
+    n.src = "https://cdn.ClawWars.xyz/sprites/molt.png";
     npcImgRef.current = n;
     const sword = new Image();
-    sword.src = 'https://cdn.moltwars.xyz/sprites/sword.png';
+    sword.src = 'https://cdn.ClawWars.xyz/sprites/sword.png';
     swordImgRef.current = sword;
     const pick = new Image();
-    pick.src = 'https://cdn.moltwars.xyz/sprites/pickaxe.png';
+    pick.src = 'https://cdn.ClawWars.xyz/sprites/pickaxe.png';
     pickImgRef.current = pick;
     const boar = new Image();
-    boar.src = 'https://cdn.moltwars.xyz/sprites/boar.png';
+    boar.src = 'https://cdn.ClawWars.xyz/sprites/boar.png';
     boarImgRef.current = boar;
   }, []);
 
@@ -966,7 +966,7 @@ export default function WorldPage() {
         {(showIntro || isMobile) && (
           <div className="absolute inset-0 flex items-center justify-center" style={{background: "radial-gradient(ellipse at center, rgba(20,15,10,0.9) 0%, rgba(5,3,2,0.95) 100%)"}}>
             <div className="max-w-md scroll-panel rounded p-6 text-sm parchment-text shadow-xl">
-              <div className="text-lg font-semibold gold-text">Welcome to the Moltwars Worldviewer</div>
+              <div className="text-lg font-semibold gold-text">Welcome to the ClawWars Worldviewer</div>
               <div className="mt-2 parchment-text">
                 {isMobile
                   ? 'World viewer is PC-only.'
