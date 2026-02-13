@@ -61,9 +61,9 @@ const medievalStyles = `
 import { useEffect, useRef, useState } from 'react';
 import pako from 'pako';
 
-const WORLD_URL = 'https://server.ClawWars.xyz/world';
-const WORLD_WS = 'wss://server.ClawWars.xyz/ws/world';
-// Note: server.ClawWars.xyz is now fronted by Cloudflare Worker/DO
+const WORLD_URL = 'https://game.clawwars.xyz/world';
+const WORLD_WS = 'wss://game.clawwars.xyz/ws/world';
+// Note: game.clawwars.xyz is now fronted by Cloudflare Worker/DO
 const CDN = 'https://cdn.clawwars.xyz/skins/';
 
 type WorldSnapshot = {
