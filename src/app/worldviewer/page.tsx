@@ -191,6 +191,7 @@ export default function WorldPage() {
     const ws = new WebSocket(WORLD_WS);
     wsRef.current = ws;
     ws.onmessage = (evt) => {
+      console.log('[world] raw msg', evt.data);
       if (!mounted) return;
       try {
         let data: any = JSON.parse(evt.data);
@@ -222,6 +223,7 @@ export default function WorldPage() {
       }
     };
     ws.onerror = (e) => {
+      console.error('[world] ws error details', e);
       if (!mounted) return;
       console.error('[world] ws error', e);
       setError('Failed to connect to live world');
